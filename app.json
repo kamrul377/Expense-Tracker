@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Expense Tracker",
+    "slug": "expense-tracker-app",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.expensetracker.mobile"
+    },
+    "android": {
+      "package": "com.expensetracker.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      }
+    }
+  }
+}

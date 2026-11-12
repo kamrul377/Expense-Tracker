@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function profile(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
+    function myRole() { return profile(request.auth.uid).role; }
+    function isAdmin() { return signedIn() && myRole() == 'admin'; }
+    function isStaff() { return signedIn() && myRole() in ['admin', 'manager']; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function notDisabled() { return profile(request.auth.uid).disabled != true; }
+    function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // ---------- User profiles ----------
+    match /users/{uid} {
+      // user reads own profile; admin/manager can read everyone (for the Admin panel)
+      allow read: if isOwner(uid) || isStaff();
+
+      // self-registration: always role "user", never disabled
+      allow create: if isOwner(uid)
+                    && request.resource.data.role == 'user'
+                    && request.resource.data.disabled == false;
+
+      allow update: if
+        // user can only edit own name / currency (can NOT change role or disabled)
+        (isOwner(uid) && changedKeys().hasOnly(['name', 'currency']))
+        // admin can change anything
+        || isAdmin()
+        // manager can only enable/disable normal users
+        || (isStaff() && myRole() == 'manager'
+            && resource.data.role == 'user'
+            && changedKeys().hasOnly(['disabled']));
+
+      allow delete: if isAdmin();
+    }
+
+    // ---------- Personal data (transactions, categories, budgets) ----------
+    // Only the owner can read/write. Admin/manager can NOT see anyone's money data.
+    match /users/{uid}/{collection}/{docId} {
+      allow read, write: if isOwner(uid) && notDisabled();
+    }
+  }
+}
