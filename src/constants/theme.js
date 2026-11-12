@@ -15,7 +15,54 @@
 // export const radius = { sm: 8, md: 12, lg: 16, pill: 999 };
 
 
-export const colors = {
+// export const colors = {
+//   // Core Backgrounds & Surfaces (Slate / Deep Dark)
+//   bg: '#0F172A',
+//   card: '#1E293B',
+//   cardHover: '#273548',
+//   border: '#334155',
+//   borderLight: '#1E293B',
+
+//   // Typography
+//   text: '#F8FAFC',
+//   muted: '#94A3B8',
+//   dim: '#64748B',
+
+//   // Primary Branding (Modern Indigo & Bright Cyan/Blue)
+//   primary: '#6366F1',        // Rich Indigo (Primary Action)
+//   primaryLight: '#818CF8',   // Lighter Indigo for highlights
+//   primaryDark: '#4F46E5',    // Deep Indigo for active states
+//   accent: '#38BDF8',         // Bright Cyan accent (Great for badges/icons)
+
+//   // Financial States
+//   income: '#34D399',         // Emerald Green
+//   incomeBg: 'rgba(52, 211, 153, 0.1)',
+//   expense: '#F87171',        // Soft Red
+//   expenseBg: 'rgba(248, 113, 113, 0.1)',
+//   warn: '#FBBF24',           // Amber Warning
+//   warnBg: 'rgba(251, 191, 36, 0.1)',
+
+//   // Category & Tag Badge Colors (New additions for diverse category display)
+//   tagFood: '#FB923C',        // Orange
+//   tagTransport: '#38BDF8',   // Sky Blue
+//   tagShopping: '#EC4899',    // Pink
+//   tagBills: '#A78BFA',       // Purple
+//   tagEntertainment: '#34D399', // Mint Green
+
+//   // Utility
+//   overlay: 'rgba(15, 23, 42, 0.7)',
+//   white: '#FFFFFF',
+//   black: '#000000',
+// };
+
+// export const radius = { sm: 8, md: 12, lg: 16, pill: 999 };
+
+
+
+
+
+
+export const darkColors = {
   // Core Backgrounds & Surfaces (Slate / Deep Dark)
   bg: '#0F172A',
   card: '#1E293B',
@@ -32,7 +79,7 @@ export const colors = {
   primary: '#6366F1',        // Rich Indigo (Primary Action)
   primaryLight: '#818CF8',   // Lighter Indigo for highlights
   primaryDark: '#4F46E5',    // Deep Indigo for active states
-  accent: '#38BDF8',         // Bright Cyan accent (Great for badges/icons)
+  accent: '#38BDF8',         // Bright Cyan accent
 
   // Financial States
   income: '#34D399',         // Emerald Green
@@ -42,7 +89,7 @@ export const colors = {
   warn: '#FBBF24',           // Amber Warning
   warnBg: 'rgba(251, 191, 36, 0.1)',
 
-  // Category & Tag Badge Colors (New additions for diverse category display)
+  // Category & Tag Badge Colors
   tagFood: '#FB923C',        // Orange
   tagTransport: '#38BDF8',   // Sky Blue
   tagShopping: '#EC4899',    // Pink
@@ -55,4 +102,46 @@ export const colors = {
   black: '#000000',
 };
 
+export const lightColors = {
+  // Core Backgrounds & Surfaces (Clean Light Mode)
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  cardHover: '#F1F5F9',
+  border: '#E2E8F0',
+  borderLight: '#F1F5F9',
+
+  // Typography
+  text: '#0F172A',
+  muted: '#64748B',
+  dim: '#94A3B8',
+
+  // Primary Branding
+  primary: '#4F46E5',        // Rich Indigo
+  primaryLight: '#6366F1',   // Lighter Indigo
+  primaryDark: '#4338CA',    // Deep Indigo
+  accent: '#0284C7',         // Cyan Accent
+
+  // Financial States
+  income: '#10B981',         // Emerald Green
+  incomeBg: 'rgba(16, 185, 129, 0.1)',
+  expense: '#EF4444',        // Red
+  expenseBg: 'rgba(239, 68, 68, 0.1)',
+  warn: '#F59E0B',           // Amber Warning
+  warnBg: 'rgba(245, 158, 11, 0.1)',
+
+  // Category & Tag Badge Colors
+  tagFood: '#F97316',
+  tagTransport: '#0284C7',
+  tagShopping: '#DB2777',
+  tagBills: '#8B5CF6',
+  tagEntertainment: '#10B981',
+
+  // Utility
+  overlay: 'rgba(15, 23, 42, 0.4)',
+  white: '#FFFFFF',
+  black: '#000000',
+};
+
+// Backward compatibility (jodi kono file-e direct colors import kora thake)
+export const colors = darkColors;
 export const radius = { sm: 8, md: 12, lg: 16, pill: 999 };
