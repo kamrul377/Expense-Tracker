@@ -30,7 +30,8 @@
           "faceIDPermission": "Allow Expense Tracker to use Face ID."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

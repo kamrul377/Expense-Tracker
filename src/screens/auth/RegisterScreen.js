@@ -1,50 +1,3 @@
-// import React, { useState } from 'react';
-// import { Alert, Text, TouchableOpacity } from 'react-native';
-// import Screen from '../../components/Screen';
-// import { Button, Input } from '../../components/ui';
-// import { useAuth } from '../../context/AuthContext';
-// import { colors } from '../../constants/theme';
-// import { authMessage } from '../../utils/authErrors';
-
-// export default function RegisterScreen({ navigation }) {
-//   const { signUp } = useAuth();
-//   const [name, setName] = useState('');
-//   const [email, setEmail] = useState('');
-//   const [password, setPassword] = useState('');
-//   const [confirm, setConfirm] = useState('');
-//   const [busy, setBusy] = useState(false);
-
-//   const submit = async () => {
-//     if (!name.trim()) return Alert.alert('Missing info', 'Enter your name.');
-//     if (!email.trim()) return Alert.alert('Missing info', 'Enter your email.');
-//     if (password.length < 6) return Alert.alert('Weak password', 'Password must be at least 6 characters.');
-//     if (password !== confirm) return Alert.alert('Mismatch', 'Passwords do not match.');
-//     setBusy(true);
-//     try {
-//       await signUp(name, email, password);
-//     } catch (e) {
-//       Alert.alert('Registration failed', authMessage(e));
-//       setBusy(false);
-//     }
-//   };
-
-//   return (
-//     <Screen>
-//       <Input label="Full name" autoCapitalize="words" value={name} onChangeText={setName} placeholder="Your name" />
-//       <Input label="Email" keyboardType="email-address" value={email} onChangeText={setEmail} placeholder="you@example.com" />
-//       <Input label="Password" secureTextEntry value={password} onChangeText={setPassword} placeholder="At least 6 characters" />
-//       <Input label="Confirm password" secureTextEntry value={confirm} onChangeText={setConfirm} placeholder="Repeat password" />
-//       <Button title="Create Account" onPress={submit} loading={busy} />
-//       <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20, alignItems: 'center' }}>
-//         <Text style={{ color: colors.muted }}>
-//           Already have an account? <Text style={{ color: colors.primaryLight, fontWeight: '700' }}>Log in</Text>
-//         </Text>
-//       </TouchableOpacity>
-//     </Screen>
-//   );
-// }
-
-
 
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
@@ -65,11 +18,11 @@ export default function RegisterScreen({ navigation }) {
   const [busy, setBusy] = useState(false);
 
   // Custom Alert State
-  const [alertData, setAlertData] = useState({ 
-    visible: false, 
-    title: '', 
-    message: '', 
-    type: 'error' 
+  const [alertData, setAlertData] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'error'
   });
 
   const showAlert = (title, message, type = 'warning') => {
@@ -81,7 +34,7 @@ export default function RegisterScreen({ navigation }) {
     if (!email.trim()) return showAlert('Missing info', 'Enter your email.', 'warning');
     if (password.length < 6) return showAlert('Weak password', 'Password must be at least 6 characters.', 'warning');
     if (password !== confirm) return showAlert('Mismatch', 'Passwords do not match.', 'error');
-    
+
     setBusy(true);
     try {
       await signUp(name, email, password);
@@ -93,12 +46,12 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <Screen contentStyle={styles.screenContainer}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          
+
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <View style={styles.iconWrapper}>
@@ -110,34 +63,34 @@ export default function RegisterScreen({ navigation }) {
 
           {/* Form Fields */}
           <View style={styles.formContainer}>
-            <Input 
-              label="Full name" 
-              autoCapitalize="words" 
-              value={name} 
-              onChangeText={setName} 
-              placeholder="Your name" 
+            <Input
+              label="Full name"
+              autoCapitalize="words"
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name"
             />
-            <Input 
-              label="Email" 
-              keyboardType="email-address" 
-              value={email} 
-              onChangeText={setEmail} 
+            <Input
+              label="Email"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
               placeholder="you@example.com"
-              autoCapitalize="none" 
+              autoCapitalize="none"
             />
-            <Input 
-              label="Password" 
-              secureTextEntry 
-              value={password} 
-              onChangeText={setPassword} 
-              placeholder="At least 6 characters" 
+            <Input
+              label="Password"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              placeholder="At least 6 characters"
             />
-            <Input 
-              label="Confirm password" 
-              secureTextEntry 
-              value={confirm} 
-              onChangeText={setConfirm} 
-              placeholder="Repeat password" 
+            <Input
+              label="Confirm password"
+              secureTextEntry
+              value={confirm}
+              onChangeText={setConfirm}
+              placeholder="Repeat password"
             />
 
             <View style={styles.buttonSpacing}>
@@ -146,8 +99,8 @@ export default function RegisterScreen({ navigation }) {
           </View>
 
           {/* Footer Navigation */}
-          <TouchableOpacity 
-            onPress={() => navigation.goBack()} 
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
             style={styles.footerContainer}
           >
             <Text style={styles.footerText}>
