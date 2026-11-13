@@ -21,6 +21,16 @@
         "projectId": "d8fe8040-239d-4369-84c8-1859c7a3c6b9"
       }
     },
-    "owner": "kamrul377"
+    "owner": "kamrul377",
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Expense Tracker to use Face ID."
+        }
+      ],
+      "expo-secure-store"
+    ]
   }
 }
