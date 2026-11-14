@@ -14,6 +14,7 @@ import BlockedScreen from '../screens/auth/BlockedScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import AdminScreen from '../screens/admin/AdminScreen';
+import LocationTrackerScreen from '../screens/LocationTrackerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +59,7 @@ export default function RootNavigator() {
           <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="AddTransaction" component={AddTransactionScreen} options={{ title: 'Transaction', presentation: 'modal' }} />
           <Stack.Screen name="Categories" component={CategoriesScreen} options={{ title: 'Manage Categories' }} />
+          <Stack.Screen name="LocationTracker" component={LocationTrackerScreen} options={{ title: 'Location Tracker' }} />
           {isStaff(role) && <Stack.Screen name="Admin" component={AdminScreen} options={{ title: 'Admin Panel' }} />}
         </Stack.Navigator>
       </DataProvider>

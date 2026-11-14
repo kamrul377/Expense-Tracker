@@ -32,7 +32,17 @@
       ],
       "expo-secure-store",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Expense Tracker to record the places you visit, even when the app is closed.",
+          "locationWhenInUsePermission": "Allow Expense Tracker to record the places you visit.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ]
     ]
   }
 }
