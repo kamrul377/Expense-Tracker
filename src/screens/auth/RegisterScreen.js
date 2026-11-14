@@ -1,16 +1,28 @@
 
-// import React, { useState } from 'react';
-// import { StyleSheet, Text, TouchableOpacity, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+
+// import React, { useMemo, useState } from 'react';
+// import {
+//   StyleSheet,
+//   Text,
+//   TouchableOpacity,
+//   View,
+//   KeyboardAvoidingView,
+//   Platform,
+//   ScrollView,
+//   ActivityIndicator,
+// } from 'react-native';
 // import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 // import Screen from '../../components/Screen';
-// import { Button, Input } from '../../components/ui';
+// import { Input } from '../../components/ui';
 // import { useAuth } from '../../context/AuthContext';
-// import { colors } from '../../constants/theme';
 // import { authMessage } from '../../utils/authErrors';
-// import CustomAlert from '../../components/CustomAlert'; // Custom Alert Component
+// import CustomAlert from '../../components/CustomAlert';
 
 // export default function RegisterScreen({ navigation }) {
-//   const { signUp } = useAuth();
+//   const { signUp, colors, theme, toggleTheme } = useAuth();
+//   const isDark = theme === 'dark';
+//   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
 //   const [name, setName] = useState('');
 //   const [email, setEmail] = useState('');
 //   const [password, setPassword] = useState('');
@@ -22,7 +34,7 @@
 //     visible: false,
 //     title: '',
 //     message: '',
-//     type: 'error'
+//     type: 'error',
 //   });
 
 //   const showAlert = (title, message, type = 'warning') => {
@@ -44,19 +56,41 @@
 //     }
 //   };
 
+//   const primaryAccent = isDark ? colors.primary || '#6366F1' : '#4F46E5';
+//   const greenBtnColor = isDark ? '#10B981' : '#059669';
+
 //   return (
 //     <Screen contentStyle={styles.screenContainer}>
 //       <KeyboardAvoidingView
 //         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 //         style={styles.keyboardView}
 //       >
-//         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+//         <ScrollView
+//           contentContainerStyle={styles.scrollContainer}
+//           showsVerticalScrollIndicator={false}
+//           keyboardShouldPersistTaps="handled"
+//         >
+//           {/* Top Row: Icon + Quick Light/Dark Toggle */}
+//           <View style={styles.topRow}>
+//             <View style={styles.iconWrapper}>
+//               <Icon name="account-plus-outline" size={40} color={primaryAccent} />
+//             </View>
+
+//             <TouchableOpacity
+//               onPress={toggleTheme}
+//               activeOpacity={0.75}
+//               style={styles.themeBtn}
+//             >
+//               <Icon
+//                 name={isDark ? 'weather-sunny' : 'weather-night'}
+//                 size={20}
+//                 color={isDark ? '#FBBF24' : colors.text}
+//               />
+//             </TouchableOpacity>
+//           </View>
 
 //           {/* Header Section */}
 //           <View style={styles.headerContainer}>
-//             <View style={styles.iconWrapper}>
-//               <Icon name="account-plus-outline" size={38} color={colors.primaryLight || '#818CF8'} />
-//             </View>
 //             <Text style={styles.title}>Create Account</Text>
 //             <Text style={styles.subtitle}>Sign up to start tracking your expenses</Text>
 //           </View>
@@ -93,21 +127,36 @@
 //               placeholder="Repeat password"
 //             />
 
+//             {/* Green Create Account Button */}
 //             <View style={styles.buttonSpacing}>
-//               <Button title="Create Account" onPress={submit} loading={busy} />
+//               <TouchableOpacity
+//                 onPress={submit}
+//                 disabled={busy}
+//                 activeOpacity={0.85}
+//                 style={[
+//                   styles.submitBtn,
+//                   { backgroundColor: greenBtnColor, opacity: busy ? 0.6 : 1 },
+//                 ]}
+//               >
+//                 {busy ? (
+//                   <ActivityIndicator color="#FFFFFF" />
+//                 ) : (
+//                   <Text style={styles.submitBtnText}>Create Account</Text>
+//                 )}
+//               </TouchableOpacity>
 //             </View>
 //           </View>
 
 //           {/* Footer Navigation */}
 //           <TouchableOpacity
 //             onPress={() => navigation.goBack()}
+//             disabled={busy}
 //             style={styles.footerContainer}
 //           >
 //             <Text style={styles.footerText}>
 //               Already have an account? <Text style={styles.loginText}>Log in</Text>
 //             </Text>
 //           </TouchableOpacity>
-
 //         </ScrollView>
 //       </KeyboardAvoidingView>
 
@@ -117,75 +166,101 @@
 //         title={alertData.title}
 //         message={alertData.message}
 //         type={alertData.type}
-//         onClose={() => setAlertData({ ...alertData, visible: false })}
+//         confirmText="Okay, Got it"
+//         onClose={() => setAlertData((prev) => ({ ...prev, visible: false }))}
 //       />
 //     </Screen>
 //   );
 // }
 
-// const styles = StyleSheet.create({
-//   screenContainer: {
-//     flex: 1,
-//     backgroundColor: colors.bg || '#0F172A',
-//   },
-//   keyboardView: {
-//     flex: 1,
-//   },
-//   scrollContainer: {
-//     flexGrow: 1,
-//     paddingHorizontal: 24,
-//     paddingVertical: 20,
-//     justifyContent: 'center',
-//   },
-//   headerContainer: {
-//     alignItems: 'flex-start',
-//     marginBottom: 28,
-//   },
-//   iconWrapper: {
-//     width: 72,
-//     height: 72,
-//     borderRadius: 20,
-//     backgroundColor: 'rgba(99, 102, 241, 0.15)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     marginBottom: 16,
-//     borderWidth: 1,
-//     borderColor: 'rgba(99, 102, 241, 0.3)',
-//   },
-//   title: {
-//     color: colors.text || '#F8FAFC',
-//     fontSize: 28,
-//     fontWeight: '800',
-//     letterSpacing: -0.5,
-//   },
-//   subtitle: {
-//     color: colors.muted || '#94A3B8',
-//     fontSize: 15,
-//     marginTop: 6,
-//   },
-//   formContainer: {
-//     width: '100%',
-//   },
-//   buttonSpacing: {
-//     marginTop: 12,
-//   },
-//   footerContainer: {
-//     marginTop: 24,
-//     alignItems: 'center',
-//     paddingVertical: 8,
-//   },
-//   footerText: {
-//     color: colors.muted || '#94A3B8',
-//     fontSize: 15,
-//   },
-//   loginText: {
-//     color: colors.accent || '#38BDF8',
-//     fontWeight: '700',
-//     fontSize: 15,
-//   },
-// });
-
-
+// const createStyles = (colors, isDark) =>
+//   StyleSheet.create({
+//     screenContainer: {
+//       flex: 1,
+//       backgroundColor: colors.bg,
+//     },
+//     keyboardView: {
+//       flex: 1,
+//     },
+//     scrollContainer: {
+//       flexGrow: 1,
+//       paddingHorizontal: 24,
+//       paddingVertical: 24,
+//       justifyContent: 'center',
+//     },
+//     topRow: {
+//       flexDirection: 'row',
+//       justifyContent: 'space-between',
+//       alignItems: 'flex-start',
+//       marginBottom: 20,
+//     },
+//     iconWrapper: {
+//       width: 76,
+//       height: 76,
+//       borderRadius: 22,
+//       backgroundColor: isDark ? 'rgba(99, 102, 241, 0.16)' : '#EEF2FF',
+//       justifyContent: 'center',
+//       alignItems: 'center',
+//       borderWidth: 1,
+//       borderColor: isDark ? 'rgba(99, 102, 241, 0.35)' : '#C7D2FE',
+//     },
+//     themeBtn: {
+//       width: 42,
+//       height: 42,
+//       borderRadius: 14,
+//       backgroundColor: colors.card,
+//       borderWidth: 1,
+//       borderColor: colors.border,
+//       justifyContent: 'center',
+//       alignItems: 'center',
+//     },
+//     headerContainer: {
+//       alignItems: 'flex-start',
+//       marginBottom: 26,
+//     },
+//     title: {
+//       color: colors.text,
+//       fontSize: 30,
+//       fontWeight: '800',
+//       letterSpacing: -0.5,
+//     },
+//     subtitle: {
+//       color: colors.muted,
+//       fontSize: 15,
+//       marginTop: 6,
+//     },
+//     formContainer: {
+//       width: '100%',
+//     },
+//     buttonSpacing: {
+//       marginTop: 14,
+//     },
+//     submitBtn: {
+//       height: 52,
+//       borderRadius: 14,
+//       justifyContent: 'center',
+//       alignItems: 'center',
+//     },
+//     submitBtnText: {
+//       color: '#FFFFFF',
+//       fontSize: 16,
+//       fontWeight: '700',
+//     },
+//     footerContainer: {
+//       marginTop: 26,
+//       alignItems: 'center',
+//       paddingVertical: 8,
+//     },
+//     footerText: {
+//       color: colors.muted,
+//       fontSize: 15,
+//     },
+//     loginText: {
+//       color: isDark ? colors.primaryLight || '#818CF8' : '#4F46E5',
+//       fontWeight: '700',
+//       fontSize: 15,
+//     },
+//   });
 
 
 
@@ -206,11 +281,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
-import Screen from '../../components/Screen';
 import { Input } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { authMessage } from '../../utils/authErrors';
 import CustomAlert from '../../components/CustomAlert';
+import BubbleBackground from '../../components/BubbleBackground'; // NEW
 
 export default function RegisterScreen({ navigation }) {
   const { signUp, colors, theme, toggleTheme } = useAuth();
@@ -254,7 +329,11 @@ export default function RegisterScreen({ navigation }) {
   const greenBtnColor = isDark ? '#10B981' : '#059669';
 
   return (
-    <Screen contentStyle={styles.screenContainer}>
+    // NEW: root view (same as Login) holds background colour + bubbles
+    // The old <Screen> wrapper is removed because it added an extra 20px padding on each side
+    <View style={styles.root}>
+      <BubbleBackground colors={colors} />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -363,14 +442,14 @@ export default function RegisterScreen({ navigation }) {
         confirmText="Okay, Got it"
         onClose={() => setAlertData((prev) => ({ ...prev, visible: false }))}
       />
-    </Screen>
+    </View>
   );
 }
 
 const createStyles = (colors, isDark) =>
   StyleSheet.create({
-    screenContainer: {
-      flex: 1,
+    root: {
+      flex: 1, // NEW
       backgroundColor: colors.bg,
     },
     keyboardView: {
@@ -378,7 +457,7 @@ const createStyles = (colors, isDark) =>
     },
     scrollContainer: {
       flexGrow: 1,
-      paddingHorizontal: 24,
+      paddingHorizontal: 24, // same as Login screen
       paddingVertical: 24,
       justifyContent: 'center',
     },
@@ -455,4 +534,3 @@ const createStyles = (colors, isDark) =>
       fontSize: 15,
     },
   });
-
