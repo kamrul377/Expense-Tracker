@@ -77,7 +77,7 @@
 //       setBioEnabled(!!c && c.email === profile?.email);
 //     })();
 //   }, [profile?.email]);
-  
+
 
 //   // Switch on/off (অফ করার আগে CustomAlert দিয়ে কনফার্মেশন নেবে)
 //   const toggleBio = (on) => {
@@ -579,6 +579,7 @@ import {
   View,
 } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Pattern, Rect, Stop } from 'react-native-svg';
+import usePullRefresh from '../hooks/usePullRefresh';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -613,6 +614,7 @@ export default function ProfileScreen({ navigation }) {
   const { transactions, symbol } = useData();
   const isDarkMode = theme === 'dark';
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { refreshControl } = usePullRefresh();
 
   // keep the screen above the keyboard (needed on edge-to-edge Android builds)
   const rootRef = useRef(null);
@@ -806,6 +808,7 @@ export default function ProfileScreen({ navigation }) {
         ref={scrollRef}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
         contentContainerStyle={styles.content}
       >
 
@@ -962,17 +965,18 @@ export default function ProfileScreen({ navigation }) {
             <Row styles={styles} colors={colors} divider icon="history" tint="#06B6D4" label="Account activity" subtitle="Recent login sessions" onPress={() => setActivityModalOpen(true)} />
           </View>
 
-          
+
 
           {/* ---------- Manage ---------- */}
-<Text style={styles.sectionTitle}>Manage</Text>
-<View style={styles.group}>
-  <Row styles={styles} colors={colors} icon="shape-outline" tint="#3B82F6" label="Categories" subtitle="Add or remove your categories" onPress={() => navigation.navigate('Categories')} />
-  <Row styles={styles} colors={colors} divider icon="map-marker-path" tint="#10B981" label="Location tracker" subtitle="Places you visited" onPress={() => navigation.navigate('LocationTracker')} />
-  {isStaff(role) && (
-    <Row styles={styles} colors={colors} divider icon="shield-account" tint="#EF4444" label="Admin panel" subtitle="Manage users and roles" onPress={() => navigation.navigate('Admin')} />
-  )}
-</View>
+          <Text style={styles.sectionTitle}>Manage</Text>
+          <View style={styles.group}>
+            <Row styles={styles} colors={colors} icon="shape-outline" tint="#3B82F6" label="Categories" subtitle="Add or remove your categories" onPress={() => navigation.navigate('Categories')} />
+            <Row styles={styles} colors={colors} divider icon="map-marker-path" tint="#10B981" label="Location tracker" subtitle="Places you visited" onPress={() => navigation.navigate('LocationTracker')} />
+            <Row styles={styles} colors={colors} divider icon="account-group" tint="#6366F1" label="Group expenses" subtitle="Shared Expenses for Tours or Trips" onPress={() => navigation.navigate('Groups')} />
+            {isStaff(role) && (
+              <Row styles={styles} colors={colors} divider icon="shield-account" tint="#EF4444" label="Admin panel" subtitle="Manage users and roles" onPress={() => navigation.navigate('Admin')} />
+            )}
+          </View>
 
 
 
@@ -1145,7 +1149,7 @@ const createStyles = (colors) =>
     root: { flex: 1, backgroundColor: colors.bg },
     content: { paddingBottom: 32 },
 
-  
+
     // header
     hero: {
       alignItems: 'center',
@@ -1158,7 +1162,7 @@ const createStyles = (colors) =>
       borderBottomWidth: 1,
       borderColor: colors.border,
       overflow: 'hidden',
-      width: '100%', 
+      width: '100%',
       alignSelf: 'stretch',
     },
 

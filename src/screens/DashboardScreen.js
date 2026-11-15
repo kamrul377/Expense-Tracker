@@ -132,7 +132,7 @@
 //           }}
 //         >
 
-          
+
 //           <ImageBackground
 //             source={{
 //               uri:
@@ -1371,6 +1371,7 @@ import {
   StyleSheet,
   Animated,
   ImageBackground,
+  TouchableOpacity
 } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
@@ -2248,6 +2249,40 @@ export default function DashboardScreen({ navigation }) {
               </Card>
             </>
           )}
+
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Groups')}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 19,
+              padding: 16,
+              marginBottom: 23,
+              overflow: 'hidden',
+            }}
+          >
+            <CardBubbles color={primaryColor} variant="compact" />
+            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: primaryColor + '22', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="account-group" size={24} color={primaryColor} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>
+                Group Expenses
+              </Text>
+              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
+                Shared expenses for tours or trips
+              </Text>
+            </View>
+            <Icon name="chevron-right" size={22} color={colors.dim} />
+          </TouchableOpacity>
+
+
+
 
           {/* =================================
               6. RECENT TRANSACTIONS
