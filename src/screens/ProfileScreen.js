@@ -415,14 +415,14 @@ export default function ProfileScreen({ navigation }) {
           {/* ---------- About / Developer ---------- */}
           <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.group}>
-            <Row 
-              styles={styles} 
-              colors={colors} 
-              icon="code-braces" 
-              tint="#8B5CF6" 
-              label="Developer Info" 
-              subtitle="App version, creator & details" 
-              onPress={() => navigation.navigate('Developer')} 
+            <Row
+              styles={styles}
+              colors={colors}
+              icon="code-braces"
+              tint="#8B5CF6"
+              label="Developer Info"
+              subtitle="App version, creator & details"
+              onPress={() => navigation.navigate('Developer')}
             />
           </View>
 
@@ -475,225 +475,220 @@ export default function ProfileScreen({ navigation }) {
       </SheetModal>
 
       {/* ---------- Account Activity / Login History Modal ---------- */}
-    
-
-         <SheetModal styles={styles} visible={activityModalOpen} onClose={() => setActivityModalOpen(false)} animationType="slide">
-  <View
-    style={[
-      styles.modalBox,
-      {
-        backgroundColor: colors.card,
-        borderColor: colors.border,
-        borderTopLeftRadius: 28,
-        borderTopRightRadius: 28,
-        paddingTop: 12,
-        paddingHorizontal: 20,
-        paddingBottom: 24,
-      },
-    ]}
-  >
-    {/* Top Drag Handle */}
-    <View
-      style={{
-        alignSelf: 'center',
-        width: 40,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: colors.border,
-        marginBottom: 16,
-      }}
-    />
-
-    {/* Header */}
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <SheetModal styles={styles} visible={activityModalOpen} onClose={() => setActivityModalOpen(false)} animationType="slide">
         <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            backgroundColor: '#06B6D41A',
-            borderWidth: 1,
-            borderColor: '#06B6D435',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={[
+            styles.modalBox,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              paddingTop: 12,
+              paddingHorizontal: 20,
+              paddingBottom: 24,
+            },
+          ]}
         >
-          <Icon name="shield-lock-outline" size={22} color="#06B6D4" />
-        </View>
-        <View>
-          <Text style={[styles.modalTitle, { fontSize: 18, fontWeight: '800', color: colors.text }]}>
-            Login & Sessions
-          </Text>
-          <Text style={{ color: colors.dim, fontSize: 12, marginTop: 2 }}>
-            Devices where your account is active
-          </Text>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        onPress={() => setActivityModalOpen(false)}
-        hitSlop={10}
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 17,
-          backgroundColor: colors.bg,
-          borderWidth: 1,
-          borderColor: colors.border,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Icon name="close" size={18} color={colors.muted} />
-      </TouchableOpacity>
-    </View>
-
-    {/* Security Banner */}
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: colors.bg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 9,
-        marginBottom: 14,
-      }}
-    >
-      <Icon name="information-outline" size={16} color="#06B6D4" />
-      <Text style={{ color: colors.muted, fontSize: 11.5, flex: 1 }}>
-        Showing your last 10 synced sign-in activities.
-      </Text>
-    </View>
-
-    {/* Sessions List */}
-    <ScrollView style={{ maxHeight: 310, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
-      {profile?.loginHistory && profile.loginHistory.length > 0 ? (
-        [...profile.loginHistory]
-          .reverse()
-          .slice(0, 10)
-          .map((session, index) => {
-            const isLatest = index === 0;
-            const dev = session.device || 'Mobile Device';
-            const iconName = dev.includes('iOS') || dev.includes('iPhone')
-              ? 'apple'
-              : dev.includes('Android')
-              ? 'android'
-              : dev.includes('Windows')
-              ? 'microsoft-windows'
-              : 'laptop';
-
-            return (
-              <View
-                key={session.id || index}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  backgroundColor: isLatest ? colors.primary + '0D' : colors.bg,
-                  borderWidth: 1,
-                  borderColor: isLatest ? colors.primary + '45' : colors.border,
-                  borderRadius: 16,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
-              >
-                {/* Device Icon */}
-                <View
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 13,
-                    backgroundColor: isLatest ? colors.primary + '20' : colors.card,
-                    borderWidth: 1,
-                    borderColor: isLatest ? colors.primary + '35' : colors.border,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Icon name={iconName} size={21} color={isLatest ? colors.primary : colors.muted} />
-                </View>
-
-                {/* Device Info */}
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                    <Text
-                      style={[styles.deviceName, { color: colors.text, fontWeight: '700', fontSize: 14, flex: 1 }]}
-                      numberOfLines={1}
-                    >
-                      {dev}
-                    </Text>
-
-                    {isLatest && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 4,
-                          backgroundColor: '#10B98120',
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: 20,
-                        }}
-                      >
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
-                        <Text style={{ color: '#059669', fontSize: 10, fontWeight: '800' }}>Current</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
-                    <Icon name="clock-outline" size={12} color={colors.dim} />
-                    <Text style={[styles.deviceDetails, { color: colors.dim, fontSize: 12 }]}>
-                      {session.timestamp}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            );
-          })
-      ) : (
-        <View
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: 30,
-            backgroundColor: colors.bg,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
+          {/* Top Drag Handle */}
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: colors.card,
+              alignSelf: 'center',
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: colors.border,
+              marginBottom: 16,
+            }}
+          />
+
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  backgroundColor: '#06B6D41A',
+                  borderWidth: 1,
+                  borderColor: '#06B6D435',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="shield-lock-outline" size={22} color="#06B6D4" />
+              </View>
+              <View>
+                <Text style={[styles.modalTitle, { fontSize: 18, fontWeight: '800', color: colors.text }]}>
+                  Login & Sessions
+                </Text>
+                <Text style={{ color: colors.dim, fontSize: 12, marginTop: 2 }}>
+                  Devices where your account is active
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setActivityModalOpen(false)}
+              hitSlop={10}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: colors.bg,
+                borderWidth: 1,
+                borderColor: colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="close" size={18} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Security Banner */}
+          <View
+            style={{
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 10,
+              gap: 8,
+              backgroundColor: colors.bg,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+              marginBottom: 14,
             }}
           >
-            <Icon name="history" size={24} color={colors.dim} />
+            <Icon name="information-outline" size={16} color="#06B6D4" />
+            <Text style={{ color: colors.muted, fontSize: 11.5, flex: 1 }}>
+              Showing your last 10 synced sign-in activities.
+            </Text>
           </View>
-          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>No Login History</Text>
-          <Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 }}>
-            Sign out and log back in to start syncing your device login activity.
-          </Text>
+
+          {/* Sessions List */}
+          <ScrollView style={{ maxHeight: 310, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+            {profile?.loginHistory && profile.loginHistory.length > 0 ? (
+              [...profile.loginHistory]
+                .reverse()
+                .slice(0, 10)
+                .map((session, index) => {
+                  const isLatest = index === 0;
+                  const dev = session.device || 'Mobile Device';
+                  const iconName = dev.includes('iOS') || dev.includes('iPhone')
+                    ? 'apple'
+                    : dev.includes('Android')
+                      ? 'android'
+                      : dev.includes('Windows')
+                        ? 'microsoft-windows'
+                        : 'laptop';
+
+                  return (
+                    <View
+                      key={session.id || index}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: isLatest ? colors.primary + '0D' : colors.bg,
+                        borderWidth: 1,
+                        borderColor: isLatest ? colors.primary + '45' : colors.border,
+                        borderRadius: 16,
+                        padding: 12,
+                        marginBottom: 10,
+                      }}
+                    >
+                      {/* Device Icon */}
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 13,
+                          backgroundColor: isLatest ? colors.primary + '20' : colors.card,
+                          borderWidth: 1,
+                          borderColor: isLatest ? colors.primary + '35' : colors.border,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Icon name={iconName} size={21} color={isLatest ? colors.primary : colors.muted} />
+                      </View>
+
+                      {/* Device Info */}
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                          <Text
+                            style={[styles.deviceName, { color: colors.text, fontWeight: '700', fontSize: 14, flex: 1 }]}
+                            numberOfLines={1}
+                          >
+                            {dev}
+                          </Text>
+
+                          {isLatest && (
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                backgroundColor: '#10B98120',
+                                paddingHorizontal: 8,
+                                paddingVertical: 3,
+                                borderRadius: 20,
+                              }}
+                            >
+                              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981' }} />
+                              <Text style={{ color: '#059669', fontSize: 10, fontWeight: '800' }}>Current</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                          <Icon name="clock-outline" size={12} color={colors.dim} />
+                          <Text style={[styles.deviceDetails, { color: colors.dim, fontSize: 12 }]}>
+                            {session.timestamp}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+            ) : (
+              <View
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 30,
+                  backgroundColor: colors.bg,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: colors.card,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 10,
+                  }}
+                >
+                  <Icon name="history" size={24} color={colors.dim} />
+                </View>
+                <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>No Login History</Text>
+                <Text style={{ color: colors.muted, fontSize: 12, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 }}>
+                  Sign out and log back in to start syncing your device login activity.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+
+          <Button title="Done" variant="secondary" onPress={() => setActivityModalOpen(false)} />
         </View>
-      )}
-    </ScrollView>
-
-    <Button title="Done" variant="secondary" onPress={() => setActivityModalOpen(false)} />
-  </View>
-</SheetModal>   
-
-
-
+      </SheetModal>
 
       {/* Custom Animated Alert Modal */}
       <CustomAlert

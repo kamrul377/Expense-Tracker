@@ -65,10 +65,12 @@ export function subscribeGroup(groupId, cb, onError) {
   );
 }
 
-export async function createGroup({ name, user, profile }) {
+export async function createGroup({ name, user, profile, photoURL = null }) {
   const inviteCode = genCode();
   const ref = await addDoc(collection(db, GROUPS), {
     name: name.trim(),
+    photoURL,
+    deposits: {},
     createdBy: user.uid,
     memberUids: [user.uid],
     members: { [user.uid]: { name: displayName(user, profile), email: norm(user.email) } },

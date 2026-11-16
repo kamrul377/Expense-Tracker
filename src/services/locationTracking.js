@@ -130,7 +130,7 @@ const startUpdates = () =>
     foregroundService: {
       notificationTitle: 'Location tracker is on',
       notificationBody: 'Recording the places you visit.',
-      notificationColor: '#10B981',
+      notificationColor: '#424242',
     },
   });
 

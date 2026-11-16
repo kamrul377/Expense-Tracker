@@ -1,10 +1,19 @@
 // services/groupPhotoService.js
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// Cloudinary upload (ProfileScreen er moto same cloud name + preset)
+const CLOUD_NAME = 'y84gtvow';
+const UPLOAD_PRESET = 'expense_tracker';
 
-// Local image uri -> Firebase Storage -> download URL
-export async function uploadGroupPhoto(uri, uid) {
-    const blob = await (await fetch(uri)).blob();
-    const r = ref(getStorage(), `groupPhotos/${uid}_${Date.now()}.jpg`);
-    await uploadBytes(r, blob, { contentType: 'image/jpeg' });
-    return getDownloadURL(r);
+// base64 (ImagePicker er base64: true) -> Cloudinary -> secure_url
+export async function uploadGroupPhoto(base64) {
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            file: `data:image/jpeg;base64,${base64}`,
+            upload_preset: UPLOAD_PRESET,
+        }),
+    });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error(data.error?.message || 'Image upload failed');
+    return data.secure_url;
 }

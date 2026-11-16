@@ -184,7 +184,7 @@ export default function AddGroupExpenseScreen({ route, navigation }) {
 
     const submit = async () => {
         const amt = parseFloat(amount);
-        if (!title.trim()) return Alert.alert('Title', 'Kisher kharoch seta likhun.');
+        if (!title.trim()) return Alert.alert('Title', 'Write what the expense was for.');
         if (!amt || amt <= 0) return Alert.alert('Amount', 'Sothik amount din.');
         try {
             setBusy(true);

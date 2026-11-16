@@ -1,6 +1,5 @@
 
 
-
 // import React, { useMemo, useState } from 'react';
 // import { FlatList, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
 // import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
@@ -15,10 +14,12 @@
 // import { totals } from '../utils/stats';
 // import CustomAlert from '../components/CustomAlert';
 // import ShareTransactionModal from '../components/ShareTransactionModal';
+// import usePullRefresh from '../hooks/usePullRefresh';
 
 // export default function TransactionsScreen({ navigation }) {
 //   const { transactions, getCategory, symbol, removeTransaction } = useData();
 //   const { colors } = useAuth();
+//   const { refreshControl } = usePullRefresh();
 
 //   const [search, setSearch] = useState('');
 //   const [type, setType] = useState('all');
@@ -109,6 +110,7 @@
 //         contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
 //         keyboardShouldPersistTaps="handled"
 //         showsVerticalScrollIndicator={false}
+//         refreshControl={refreshControl}
 //         ListHeaderComponent={
 //           <View>
 //             {/* Search Bar */}
@@ -211,36 +213,14 @@
 //         }
 //         ListEmptyComponent={<EmptyState icon="text-search" title="No transactions found" subtitle="Try changing date filter or search." />}
 //         renderItem={({ item }) => (
-//           <View>
-//             <TransactionItem
-//               item={item}
-//               symbol={symbol}
-//               category={getCategory(item.categoryId, item.categoryName)}
-//               onPress={() => navigation.navigate('AddTransaction', { transaction: item })}
-//               onLongPress={() => confirmDelete(item)}
-//             />
-//             {/* Share button: card er bhitore, bottom-right corner e */}
-//             <TouchableOpacity
-//               onPress={() => setShareItem(item)}
-//               activeOpacity={0.7}
-//               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-//               style={{
-//                 position: 'absolute',
-//                 right: 10,
-//                 top: -6,
-//                 width: 22,
-//                 height: 22,
-//                 borderRadius: 11,
-//                 backgroundColor: colors.bg,
-//                 borderWidth: 1,
-//                 borderColor: colors.border,
-//                 alignItems: 'center',
-//                 justifyContent: 'center',
-//               }}
-//             >
-//               <Icon name="share-variant" size={14} color={colors.primaryLight || colors.dim} />
-//             </TouchableOpacity>
-//           </View>
+//           <TransactionItem
+//             item={item}
+//             symbol={symbol}
+//             category={getCategory(item.categoryId, item.categoryName)}
+//             onPress={() => navigation.navigate('AddTransaction', { transaction: item })}
+//             onLongPress={() => confirmDelete(item)}
+//             onShare={() => setShareItem(item)}
+//           />
 //         )}
 //       />
 //       <Fab onPress={() => navigation.navigate('AddTransaction')} />
@@ -278,11 +258,20 @@
 
 
 
-
-
-
-import React, { useMemo, useState } from 'react';
-import { FlatList, Text, TextInput, TouchableOpacity, View, Platform } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  FlatList,
+  LayoutAnimation,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  UIManager,
+  View,
+} from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MonthSwitcher from '../components/MonthSwitcher';
@@ -296,6 +285,75 @@ import { totals } from '../utils/stats';
 import CustomAlert from '../components/CustomAlert';
 import ShareTransactionModal from '../components/ShareTransactionModal';
 import usePullRefresh from '../hooks/usePullRefresh';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+/* ---------- Animation Helpers ---------- */
+
+function FadeSlide({ index = 0, children, style }) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 400,
+      delay: Math.min(index, 10) * 55,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [anim, index]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          opacity: anim,
+          transform: [
+            {
+              translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [22, 0],
+              }),
+            },
+          ],
+        },
+        style,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+function Press({ onPress, style, children }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animateTo = (val) => {
+    Animated.spring(scale, {
+      toValue: val,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 6,
+    }).start();
+  };
+
+  return (
+    <TouchableWithoutFeedback
+      onPress={onPress}
+      onPressIn={() => animateTo(0.95)}
+      onPressOut={() => animateTo(1)}
+    >
+      <Animated.View style={[{ transform: [{ scale }] }, style]}>
+        {children}
+      </Animated.View>
+    </TouchableWithoutFeedback>
+  );
+}
+
+/* ---------- Main Screen ---------- */
 
 export default function TransactionsScreen({ navigation }) {
   const { transactions, getCategory, symbol, removeTransaction } = useData();
@@ -327,6 +385,10 @@ export default function TransactionsScreen({ navigation }) {
 
   const closeAlert = () => {
     setAlertData((prev) => ({ ...prev, visible: false, onConfirm: null }));
+  };
+
+  const triggerLayoutAnim = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   };
 
   const filtered = useMemo(() => {
@@ -364,8 +426,14 @@ export default function TransactionsScreen({ navigation }) {
   const handleDateChange = (event, date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (date) {
+      triggerLayoutAnim();
       setSelectedDate(date);
     }
+  };
+
+  const handleTypeChange = (val) => {
+    triggerLayoutAnim();
+    setType(val);
   };
 
   const confirmDelete = (t) => {
@@ -377,6 +445,7 @@ export default function TransactionsScreen({ navigation }) {
       showCancel: true,
       confirmText: 'Delete',
       onConfirm: () => {
+        triggerLayoutAnim();
         removeTransaction(t.id);
         closeAlert();
       },
@@ -395,66 +464,93 @@ export default function TransactionsScreen({ navigation }) {
         ListHeaderComponent={
           <View>
             {/* Search Bar */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.card,
-                borderRadius: radius.md,
-                paddingHorizontal: 12,
-                borderWidth: 1,
-                borderColor: colors.border,
-                marginBottom: 12,
-              }}
-            >
-              <Icon name="magnify" size={20} color={colors.dim} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search title, category, payment..."
-                placeholderTextColor={colors.dim}
-                style={{ flex: 1, color: colors.text, paddingVertical: 11, paddingHorizontal: 8 }}
-              />
-              {search.length > 0 && (
-                <TouchableOpacity onPress={() => setSearch('')}>
-                  <Icon name="close-circle" size={18} color={colors.dim} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Manual Date Filter Button & Month Switcher Row */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <View style={{ flex: 1 }}>
-                <MonthSwitcher date={month} onChange={setMonth} disabled={allTime || selectedDate !== null} />
-              </View>
-
-              <TouchableOpacity
-                onPress={() => setShowDatePicker(true)}
+            <FadeSlide index={0}>
+              <View
                 style={{
-                  backgroundColor: selectedDate ? colors.primary || '#059669' : colors.card,
-                  borderWidth: 1,
-                  borderColor: selectedDate ? 'transparent' : colors.border,
-                  paddingHorizontal: 12,
-                  paddingVertical: 11,
-                  borderRadius: radius.md,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 6,
-                  height: 48,
+                  backgroundColor: colors.card,
+                  borderRadius: radius.md,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
                   marginBottom: 12,
                 }}
               >
-                <Icon name="calendar-search" size={18} color={selectedDate ? '#fff' : colors.text} />
-                <Text style={{ color: selectedDate ? '#fff' : colors.text, fontSize: 13, fontWeight: '600' }}>
-                  {selectedDate ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Filter Date'}
-                </Text>
-                {selectedDate && (
-                  <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedDate(null); }}>
-                    <Icon name="close" size={16} color="#fff" />
+                <Icon name="magnify" size={20} color={colors.dim} />
+                <TextInput
+                  value={search}
+                  onChangeText={(txt) => {
+                    triggerLayoutAnim();
+                    setSearch(txt);
+                  }}
+                  placeholder="Search title, category, payment..."
+                  placeholderTextColor={colors.dim}
+                  style={{ flex: 1, color: colors.text, paddingVertical: 11, paddingHorizontal: 8 }}
+                />
+                {search.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      triggerLayoutAnim();
+                      setSearch('');
+                    }}
+                  >
+                    <Icon name="close-circle" size={18} color={colors.dim} />
                   </TouchableOpacity>
                 )}
-              </TouchableOpacity>
-            </View>
+              </View>
+            </FadeSlide>
+
+            {/* Manual Date Filter Button & Month Switcher Row */}
+            <FadeSlide index={1}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <MonthSwitcher
+                    date={month}
+                    onChange={(d) => {
+                      triggerLayoutAnim();
+                      setMonth(d);
+                    }}
+                    disabled={allTime || selectedDate !== null}
+                  />
+                </View>
+
+                <Press
+                  onPress={() => setShowDatePicker(true)}
+                  style={{
+                    backgroundColor: selectedDate ? colors.primary || '#059669' : colors.card,
+                    borderWidth: 1,
+                    borderColor: selectedDate ? 'transparent' : colors.border,
+                    paddingHorizontal: 12,
+                    paddingVertical: 11,
+                    borderRadius: radius.md,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    height: 48,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Icon name="calendar-search" size={18} color={selectedDate ? '#fff' : colors.text} />
+                  <Text style={{ color: selectedDate ? '#fff' : colors.text, fontSize: 13, fontWeight: '600' }}>
+                    {selectedDate
+                      ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : 'Filter Date'}
+                  </Text>
+                  {selectedDate && (
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        triggerLayoutAnim();
+                        setSelectedDate(null);
+                      }}
+                    >
+                      <Icon name="close" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  )}
+                </Press>
+              </View>
+            </FadeSlide>
 
             {showDatePicker && (
               <DateTimePicker
@@ -465,45 +561,82 @@ export default function TransactionsScreen({ navigation }) {
               />
             )}
 
-            <Segmented
-              value={type}
-              onChange={setType}
-              options={[
-                { value: 'all', label: 'All' },
-                { value: 'expense', label: 'Expense', color: colors.expense || '#DC2626' },
-                { value: 'income', label: 'Income', color: colors.income || '#059669' },
-              ]}
-            />
+            {/* Segmented Filter */}
+            <FadeSlide index={2}>
+              <Segmented
+                value={type}
+                onChange={handleTypeChange}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'expense', label: 'Expense', color: colors.expense || '#DC2626' },
+                  { value: 'income', label: 'Income', color: colors.income || '#059669' },
+                ]}
+              />
+            </FadeSlide>
 
             <View style={{ height: 12 }} />
 
-            <TouchableOpacity
-              onPress={() => { setAllTime(!allTime); setSelectedDate(null); }}
-              style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}
-            >
-              <Icon name={allTime ? 'checkbox-marked' : 'checkbox-blank-outline'} size={20} color={colors.primaryLight} />
-              <Text style={{ color: colors.muted, marginLeft: 6, fontSize: 13 }}>Show all time</Text>
-            </TouchableOpacity>
+            {/* All Time Toggle & Summary */}
+            <FadeSlide index={3}>
+              <Press
+                onPress={() => {
+                  triggerLayoutAnim();
+                  setAllTime(!allTime);
+                  setSelectedDate(null);
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, alignSelf: 'flex-start' }}>
+                  <Icon
+                    name={allTime ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                    size={20}
+                    color={colors.primaryLight}
+                  />
+                  <Text style={{ color: colors.muted, marginLeft: 6, fontSize: 13 }}>Show all time</Text>
+                </View>
+              </Press>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ color: colors.income, fontWeight: '700' }}>+{formatMoney(sum.income, symbol)}</Text>
-              <Text style={{ color: colors.muted }}>{filtered.length} items {selectedDate ? `(Filtered by date)` : ''}</Text>
-              <Text style={{ color: colors.expense, fontWeight: '700' }}>-{formatMoney(sum.expense, symbol)}</Text>
-            </View>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: colors.card,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: 14,
+                }}
+              >
+                <Text style={{ color: colors.income, fontWeight: '700' }}>+{formatMoney(sum.income, symbol)}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>
+                  {filtered.length} items {selectedDate ? '(Filtered)' : ''}
+                </Text>
+                <Text style={{ color: colors.expense, fontWeight: '700' }}>-{formatMoney(sum.expense, symbol)}</Text>
+              </View>
+            </FadeSlide>
           </View>
         }
-        ListEmptyComponent={<EmptyState icon="text-search" title="No transactions found" subtitle="Try changing date filter or search." />}
-        renderItem={({ item }) => (
-          <TransactionItem
-            item={item}
-            symbol={symbol}
-            category={getCategory(item.categoryId, item.categoryName)}
-            onPress={() => navigation.navigate('AddTransaction', { transaction: item })}
-            onLongPress={() => confirmDelete(item)}
-            onShare={() => setShareItem(item)}
-          />
+        ListEmptyComponent={
+          <FadeSlide index={2}>
+            <EmptyState icon="text-search" title="No transactions found" subtitle="Try changing date filter or search." />
+          </FadeSlide>
+        }
+        renderItem={({ item, index }) => (
+          <FadeSlide index={index + 4}>
+            <TransactionItem
+              item={item}
+              symbol={symbol}
+              category={getCategory(item.categoryId, item.categoryName)}
+              onPress={() => navigation.navigate('AddTransaction', { transaction: item })}
+              onLongPress={() => confirmDelete(item)}
+              onShare={() => setShareItem(item)}
+            />
+          </FadeSlide>
         )}
       />
+
       <Fab onPress={() => navigation.navigate('AddTransaction')} />
 
       {/* Share card modal */}
