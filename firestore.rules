@@ -4,40 +4,104 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function profile(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
-    function myRole() { return profile(request.auth.uid).role; }
-    function isAdmin() { return signedIn() && myRole() == 'admin'; }
-    function isStaff() { return signedIn() && myRole() in ['admin', 'manager']; }
+    function isAdmin() { return signedIn() && profile(request.auth.uid).role == 'admin'; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
     function notDisabled() { return profile(request.auth.uid).disabled != true; }
     function changedKeys() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // ---------- User profiles ----------
     match /users/{uid} {
-      // user reads own profile; admin/manager can read everyone (for the Admin panel)
-      allow read: if isOwner(uid) || isStaff();
+      allow read: if isOwner(uid) || isAdmin();
 
-      // self-registration: always role "user", never disabled
       allow create: if isOwner(uid)
                     && request.resource.data.role == 'user'
                     && request.resource.data.disabled == false;
 
       allow update: if
-        // user can only edit own name / currency (can NOT change role or disabled)
-        (isOwner(uid) && changedKeys().hasOnly(['name', 'currency']))
-        // admin can change anything
-        || isAdmin()
-        // manager can only enable/disable normal users
-        || (isStaff() && myRole() == 'manager'
-            && resource.data.role == 'user'
-            && changedKeys().hasOnly(['disabled']));
+        (isOwner(uid) && changedKeys().hasOnly(['name', 'currency', 'avatar']))
+        || isAdmin();
 
       allow delete: if isAdmin();
     }
 
     // ---------- Personal data (transactions, categories, budgets) ----------
-    // Only the owner can read/write. Admin/manager can NOT see anyone's money data.
     match /users/{uid}/{collection}/{docId} {
       allow read, write: if isOwner(uid) && notDisabled();
+    }
+
+    // ================= GROUPS (NEW) =================
+    match /groups/{gid} {
+      function onlyChanged(keys) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+      }
+      function isGroupOwner() { return resource.data.createdBy == request.auth.uid; }
+      function isGroupMember() { return request.auth.uid in resource.data.memberUids; }
+      function isInvited() { return request.auth.token.email in resource.data.invitedEmails; }
+
+      allow read: if signedIn() && (isGroupMember() || isInvited());
+
+      allow create: if signedIn() && notDisabled()
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.memberUids == [request.auth.uid];
+
+      allow update: if signedIn() && notDisabled() && (
+        // group creator: shob kichu
+        isGroupOwner()
+        // member: notun email invite kora
+        || (isGroupMember()
+            && onlyChanged(['invitedEmails'])
+            && request.resource.data.invitedEmails.hasAll(resource.data.invitedEmails))
+        // member: nijer group theke ber hoye jawa
+        || (isGroupMember()
+            && onlyChanged(['memberUids'])
+            && !(request.auth.uid in request.resource.data.memberUids)
+            && request.resource.data.memberUids.size() == resource.data.memberUids.size() - 1)
+        // invited user: decline kora
+        || (isInvited()
+            && onlyChanged(['invitedEmails'])
+            && !(request.auth.token.email in request.resource.data.invitedEmails))
+        // accept kora ba invite code diye join kora (nijeke add kora)
+        || (!isGroupMember()
+            && onlyChanged(['memberUids', 'members', 'invitedEmails'])
+            && request.auth.uid in request.resource.data.memberUids
+            && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1)
+      );
+
+      allow delete: if signedIn() && isGroupOwner();
+
+      match /expenses/{eid} {
+        function groupData() { return get(/databases/$(database)/documents/groups/$(gid)).data; }
+        function inGroup() { return signedIn() && request.auth.uid in groupData().memberUids; }
+
+        allow read: if inGroup();
+
+        allow create: if inGroup() && notDisabled()
+                      && request.resource.data.createdBy == request.auth.uid;
+
+        // shudhu je add korse se edit korte parbe
+        allow update: if inGroup() && notDisabled()
+                      && resource.data.createdBy == request.auth.uid
+                      && request.resource.data.createdBy == resource.data.createdBy;
+
+        // je add korse ba group creator delete korte parbe
+        allow delete: if inGroup()
+                      && (resource.data.createdBy == request.auth.uid
+                          || groupData().createdBy == request.auth.uid);
+      }
+    }
+
+    // Push notification token (email diye khuje notification pathanor jonno)
+    match /pushTokens/{email} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if signedIn() && request.auth.token.email.lower() == email;
+    }
+
+    // Invite code -> group id
+    match /groupInvites/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
     }
   }
 }

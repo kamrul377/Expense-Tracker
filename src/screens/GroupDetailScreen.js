@@ -1,363 +1,31 @@
 
 
-// // screens/GroupDetailScreen.js
-// import React, { useEffect, useMemo, useState } from 'react';
-// import { ActivityIndicator, Alert, FlatList, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
-// import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
-// import * as Linking from 'expo-linking';
-// import { useAuth } from '../context/AuthContext';
-// import { useData } from '../context/DataContext';
-// import { EmptyState, Fab } from '../components/ui';
-// import { radius } from '../constants/theme';
-// import { formatMoney } from '../utils/format';
-// import {
-//   cancelInvite,
-//   displayName,
-//   deleteExpense,
-//   deleteGroup,
-//   inviteByEmail,
-//   leaveGroup,
-//   norm,
-//   subscribeExpenses,
-//   subscribeGroup,
-// } from '../services/groupService';
-// import { sendPush } from '../services/pushService';
-// import { PrimaryBtn, SmallModal } from './GroupsScreen';
-
-// // Je member ekhono group e ache shudhu tader (ber hoye gele members map e naam thake, kintu list e dekhabo na)
-// const activeMembersOf = (g) =>
-//   Object.fromEntries(Object.entries(g?.members || {}).filter(([uid]) => (g?.memberUids || []).includes(uid)));
-
-// export default function GroupDetailScreen({ route, navigation }) {
-//   const { groupId } = route.params;
-//   const { user, profile, colors } = useAuth();
-//   const { symbol } = useData();
-//   const primary = colors.primary || '#059669';
-
-//   const [group, setGroup] = useState(undefined);
-//   const [expenses, setExpenses] = useState([]);
-//   const [inviteOpen, setInviteOpen] = useState(false);
-//   const [email, setEmail] = useState('');
-//   const [busy, setBusy] = useState(false);
-
-//   useEffect(() => {
-//     const u1 = subscribeGroup(groupId, setGroup, () => setGroup(null));
-//     const u2 = subscribeExpenses(groupId, setExpenses, () => { });
-//     return () => {
-//       u1();
-//       u2();
-//     };
-//   }, [groupId]);
-
-//   useEffect(() => {
-//     if (group) navigation.setOptions({ title: group.name });
-//   }, [group, navigation]);
-
-//   const isOwner = group?.createdBy === user.uid;
-
-//   const total = useMemo(() => expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0), [expenses]);
-
-//   const perMember = useMemo(() => {
-//     const map = {};
-//     expenses.forEach((e) => {
-//       map[e.paidBy] = (map[e.paidBy] || 0) + (Number(e.amount) || 0);
-//     });
-//     return map;
-//   }, [expenses]);
-
-//   const sendInvite = async () => {
-//     const em = norm(email);
-//     if (!/^\S+@\S+\.\S+$/.test(em)) {
-//       Alert.alert('Email', 'Sothik email din.');
-//       return;
-//     }
-//     if (Object.values(activeMembersOf(group)).some((m) => m.email === em)) {
-//       Alert.alert('Already member', 'This email is already in the group.');
-//       return;
-//     }
-//     try {
-//       setBusy(true);
-//       await inviteByEmail(groupId, em);
-//       sendPush([em], {
-//         title: 'Group invitation',
-//         body: `${displayName(user, profile)} apnake "${group.name}" group e invite korechhen`,
-//         data: { type: 'invite', groupId },
-//       });
-//       setEmail('');
-//       Alert.alert('Invited', 'Se app e login korle Groups screen e invitation dekhte pabe.');
-//     } catch (e) {
-//       Alert.alert('Error', 'Invite pathano jayni.');
-//     } finally {
-//       setBusy(false);
-//     }
-//   };
-
-//   const shareLink = async () => {
-//     const link = Linking.createURL(`join/${group.inviteCode}`);
-//     await Share.share({
-//       message: `"${group.name}" group e join korte amar app e invite code ba link use koro.\nCode: ${group.inviteCode}\nLink: ${link}`,
-//     });
-//   };
-
-//   const confirmDeleteExpense = (e) => {
-//     const canDelete = e.createdBy === user.uid || isOwner;
-//     if (!canDelete) {
-//       Alert.alert('Not allowed', 'Shudhu je add korse se ba group creator delete korte pare.');
-//       return;
-//     }
-//     Alert.alert('Delete', 'Delete this entry?', [
-//       { text: 'Cancel', style: 'cancel' },
-//       { text: 'Delete', style: 'destructive', onPress: () => deleteExpense(groupId, e.id).catch(() => { }) },
-//     ]);
-//   };
-
-//   const openEdit = (e) => {
-//     if (e.createdBy !== user.uid) {
-//       Alert.alert('Not allowed', 'Onner entry edit kora jabe na.');
-//       return;
-//     }
-//     navigation.navigate('AddGroupExpense', { groupId, groupName: group.name, members: activeMembersOf(group), expense: e });
-//   };
-
-//   const leaveOrDelete = () => {
-//     if (isOwner) {
-//       Alert.alert('Delete group', 'Group ar tar shob hisab delete hoye jabe. Nishchit?', [
-//         { text: 'Cancel', style: 'cancel' },
-//         {
-//           text: 'Delete',
-//           style: 'destructive',
-//           onPress: async () => {
-//             try {
-//               await deleteGroup(group);
-//               navigation.goBack();
-//             } catch (e) {
-//               Alert.alert('Error', 'Delete kora jayni.');
-//             }
-//           },
-//         },
-//       ]);
-//     } else {
-//       Alert.alert('Leave group', 'Group theke ber hoye jaben?', [
-//         { text: 'Cancel', style: 'cancel' },
-//         {
-//           text: 'Leave',
-//           style: 'destructive',
-//           onPress: async () => {
-//             try {
-//               await leaveGroup(groupId, user.uid);
-//               navigation.goBack();
-//             } catch (e) {
-//               Alert.alert('Error', 'Leave kora jayni.');
-//             }
-//           },
-//         },
-//       ]);
-//     }
-//   };
-
-//   if (group === undefined) {
-//     return (
-//       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-//         <ActivityIndicator color={primary} />
-//       </View>
-//     );
-//   }
-//   if (group === null || !(group.memberUids || []).includes(user.uid)) {
-//     return (
-//       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-//         <EmptyState icon="account-off-outline" title="Group paoya jayni" subtitle="Group ta delete hoye gese ba apni member na." />
-//       </View>
-//     );
-//   }
-
-//   const members = Object.entries(activeMembersOf(group));
-
-//   return (
-//     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-//       <FlatList
-//         data={expenses}
-//         keyExtractor={(e) => e.id}
-//         contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
-//         showsVerticalScrollIndicator={false}
-//         ListHeaderComponent={
-//           <View>
-//             {/* Total */}
-//             <View style={{ backgroundColor: primary, borderRadius: 24, padding: 18, marginBottom: 14, overflow: 'hidden' }}>
-//               <View style={{ position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.14)' }} />
-//               <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12 }}>Total group expense</Text>
-//               <Text style={{ color: '#fff', fontSize: 32, fontWeight: '900', marginTop: 2 }}>{formatMoney(total, symbol)}</Text>
-//               <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4 }}>
-//                 {expenses.length} entries - {members.length} members
-//               </Text>
-//             </View>
-
-//             {/* Members */}
-//             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-//               <Text style={{ color: colors.muted, fontWeight: '700' }}>Members</Text>
-//               <TouchableOpacity onPress={() => setInviteOpen(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-//                 <Icon name="account-plus-outline" size={18} color={primary} />
-//                 <Text style={{ color: primary, fontWeight: '700', fontSize: 13 }}>Invite</Text>
-//               </TouchableOpacity>
-//             </View>
-//             <View
-//               style={{
-//                 backgroundColor: colors.card,
-//                 borderRadius: radius.md,
-//                 borderWidth: 1,
-//                 borderColor: colors.border,
-//                 paddingHorizontal: 12,
-//                 marginBottom: 16,
-//               }}
-//             >
-//               {members.map(([uid, m], i) => (
-//                 <View
-//                   key={uid}
-//                   style={{
-//                     flexDirection: 'row',
-//                     alignItems: 'center',
-//                     paddingVertical: 10,
-//                     borderTopWidth: i === 0 ? 0 : 1,
-//                     borderTopColor: colors.border,
-//                   }}
-//                 >
-//                   <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: primary + '22', alignItems: 'center', justifyContent: 'center' }}>
-//                     <Text style={{ color: primary, fontWeight: '800' }}>{(m.name || '?').charAt(0).toUpperCase()}</Text>
-//                   </View>
-//                   <Text style={{ color: colors.text, marginLeft: 10, flex: 1 }} numberOfLines={1}>
-//                     {m.name}
-//                     {uid === user.uid ? ' (You)' : ''}
-//                     {uid === group.createdBy ? '  *' : ''}
-//                   </Text>
-//                   <Text style={{ color: colors.muted, fontWeight: '700' }}>{formatMoney(perMember[uid] || 0, symbol)}</Text>
-//                 </View>
-//               ))}
-//               {(group.invitedEmails || []).map((em) => (
-//                 <View
-//                   key={em}
-//                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}
-//                 >
-//                   <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-//                     <Icon name="email-outline" size={16} color={colors.dim} />
-//                   </View>
-//                   <Text style={{ color: colors.dim, marginLeft: 10, flex: 1 }} numberOfLines={1}>
-//                     {em} (pending)
-//                   </Text>
-//                   {isOwner && (
-//                     <TouchableOpacity onPress={() => cancelInvite(groupId, em).catch(() => { })}>
-//                       <Icon name="close-circle-outline" size={18} color={colors.dim} />
-//                     </TouchableOpacity>
-//                   )}
-//                 </View>
-//               ))}
-//             </View>
-
-//             <Text style={{ color: colors.muted, fontWeight: '700', marginBottom: 8 }}>Expenses</Text>
-//           </View>
-//         }
-//         ListEmptyComponent={<EmptyState icon="receipt-text-outline" title="No expenses yet" subtitle="Tap the + button to add your first expense" />}
-//         ListFooterComponent={
-//           <TouchableOpacity onPress={leaveOrDelete} style={{ alignItems: 'center', marginTop: 20 }}>
-//             <Text style={{ color: colors.expense || '#DC2626', fontWeight: '700' }}>{isOwner ? 'Delete group' : 'Leave group'}</Text>
-//           </TouchableOpacity>
-//         }
-//         renderItem={({ item: e }) => {
-//           const who = group.members?.[e.paidBy]?.name || e.paidByName || 'Someone';
-//           const d = e.date ? new Date(e.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
-//           return (
-//             <TouchableOpacity
-//               onPress={() => openEdit(e)}
-//               onLongPress={() => confirmDeleteExpense(e)}
-//               activeOpacity={0.8}
-//               style={{
-//                 flexDirection: 'row',
-//                 alignItems: 'center',
-//                 backgroundColor: colors.card,
-//                 borderRadius: radius.md,
-//                 borderWidth: 1,
-//                 borderColor: colors.border,
-//                 padding: 12,
-//                 marginBottom: 10,
-//               }}
-//             >
-//               <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: (colors.expense || '#DC2626') + '1F', alignItems: 'center', justifyContent: 'center' }}>
-//                 <Icon name="receipt" size={20} color={colors.expense || '#DC2626'} />
-//               </View>
-//               <View style={{ flex: 1, marginLeft: 12 }}>
-//                 <Text style={{ color: colors.text, fontWeight: '700' }} numberOfLines={1}>
-//                   {e.title}
-//                 </Text>
-//                 <Text style={{ color: colors.dim, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
-//                   {who} paid - {d}
-//                   {e.note ? ` - ${e.note}` : ''}
-//                 </Text>
-//               </View>
-//               <Text style={{ color: colors.text, fontWeight: '800' }}>{formatMoney(e.amount, symbol)}</Text>
-//             </TouchableOpacity>
-//           );
-//         }}
-//       />
-//       <Fab onPress={() => navigation.navigate('AddGroupExpense', { groupId, groupName: group.name, members: activeMembersOf(group) })} />
-
-//       <SmallModal visible={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite friends" colors={colors}>
-//         <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 8 }}>Friend er registered email din:</Text>
-//         <TextInput
-//           value={email}
-//           onChangeText={setEmail}
-//           placeholder="friend@email.com"
-//           placeholderTextColor={colors.dim}
-//           autoCapitalize="none"
-//           keyboardType="email-address"
-//           style={{
-//             backgroundColor: colors.bg,
-//             borderWidth: 1,
-//             borderColor: colors.border,
-//             borderRadius: 14,
-//             paddingHorizontal: 14,
-//             paddingVertical: 12,
-//             color: colors.text,
-//             marginBottom: 12,
-//           }}
-//         />
-//         <PrimaryBtn label="Send invite" onPress={sendInvite} busy={busy} color={primary} />
-//         <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 16 }} />
-//         <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 8 }}>Ba link / code share korun:</Text>
-//         <TouchableOpacity
-//           onPress={shareLink}
-//           style={{
-//             flexDirection: 'row',
-//             alignItems: 'center',
-//             justifyContent: 'center',
-//             gap: 8,
-//             borderWidth: 1,
-//             borderColor: primary,
-//             borderRadius: 14,
-//             paddingVertical: 13,
-//           }}
-//         >
-//           <Icon name="share-variant" size={18} color={primary} />
-//           <Text style={{ color: primary, fontWeight: '800' }}>Share link ({group.inviteCode})</Text>
-//         </TouchableOpacity>
-//       </SmallModal>
-//     </View>
-//   );
-// }
-
-
-
-
-
 
 // screens/GroupDetailScreen.js
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Share, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  FlatList,
+  Image,
+  Share,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { EmptyState, Fab } from '../components/ui';
 import { radius } from '../constants/theme';
 import { formatMoney } from '../utils/format';
-import CustomAlert from '../components/CustomAlert'; // Import your CustomAlert component
+import CustomAlert from '../components/CustomAlert';
 import {
   cancelInvite,
   displayName,
@@ -372,9 +40,82 @@ import {
 import { sendPush } from '../services/pushService';
 import { PrimaryBtn, SmallModal } from './GroupsScreen';
 
-// Only include active members (if someone left, their uid is removed from memberUids)
+// TODO: আপনার তৈরি করা ShareTransactionModal ফাইলটি এখানে ইম্পোর্ট করুন
+// import ShareTransactionModal from '../components/ShareTransactionModal';
+
 const activeMembersOf = (g) =>
   Object.fromEntries(Object.entries(g?.members || {}).filter(([uid]) => (g?.memberUids || []).includes(uid)));
+
+const memberPhoto = (m) => m?.photoURL || m?.photo || m?.avatar || null;
+
+/* ---------- Animated UI Helpers ---------- */
+
+function FadeSlide({ index = 0, children, style }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(v, {
+      toValue: 1,
+      duration: 420,
+      delay: Math.min(index, 8) * 60,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [v, index]);
+  return (
+    <Animated.View
+      style={[
+        { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] },
+        style,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+function Press({ onPress, onLongPress, style, children, disabled }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (val) =>
+    Animated.spring(scale, { toValue: val, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  return (
+    <TouchableWithoutFeedback
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={() => to(0.97)}
+      onPressOut={() => to(1)}
+      disabled={disabled}
+    >
+      <Animated.View style={[{ transform: [{ scale }] }, style]}>{children}</Animated.View>
+    </TouchableWithoutFeedback>
+  );
+}
+
+function UserAvatar({ uri, name, size = 40, color, bg }) {
+  const initial = (name || '?').trim().charAt(0).toUpperCase();
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: color + '35',
+      }}
+    >
+      {uri ? (
+        <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
+      ) : (
+        <Text style={{ color, fontWeight: '800', fontSize: size * 0.42 }}>{initial}</Text>
+      )}
+    </View>
+  );
+}
+
+/* ---------- Main Screen ---------- */
 
 export default function GroupDetailScreen({ route, navigation }) {
   const { groupId } = route.params;
@@ -387,6 +128,16 @@ export default function GroupDetailScreen({ route, navigation }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Initial Deposit Modal State
+  const [depositModal, setDepositModal] = useState({ visible: false, uid: null, name: '', amount: '' });
+
+  // Share Card Modal State (আপনার কার্ডের জন্য)
+  const [shareItem, setShareItem] = useState(null);
+
+  // Live Member Profiles State
+  const [profiles, setProfiles] = useState({});
+  const profileSubs = useRef({});
 
   // Custom Alert State
   const [alertConfig, setAlertConfig] = useState({
@@ -415,10 +166,9 @@ export default function GroupDetailScreen({ route, navigation }) {
     });
   };
 
-  const hideAlert = () => {
-    setAlertConfig((prev) => ({ ...prev, visible: false }));
-  };
+  const hideAlert = () => setAlertConfig((prev) => ({ ...prev, visible: false }));
 
+  // Subscribe Group & Expenses
   useEffect(() => {
     const u1 = subscribeGroup(groupId, setGroup, () => setGroup(null));
     const u2 = subscribeExpenses(groupId, setExpenses, () => { });
@@ -428,21 +178,73 @@ export default function GroupDetailScreen({ route, navigation }) {
     };
   }, [groupId]);
 
+  // Subscribe Live Member Profile Photos from users/{uid}
+  useEffect(() => {
+    if (!group) return;
+    const uids = new Set([...(group.memberUids || []), ...Object.keys(group.members || {})]);
+    uids.forEach((uid) => {
+      if (profileSubs.current[uid]) return;
+      profileSubs.current[uid] = onSnapshot(
+        doc(db, 'users', uid),
+        (snap) => {
+          if (snap.exists()) setProfiles((p) => ({ ...p, [uid]: snap.data() }));
+        },
+        () => { }
+      );
+    });
+  }, [group]);
+
+  useEffect(
+    () => () => {
+      Object.values(profileSubs.current).forEach((unsub) => unsub());
+      profileSubs.current = {};
+    },
+    []
+  );
+
   useEffect(() => {
     if (group) navigation.setOptions({ title: group.name });
   }, [group, navigation]);
 
   const isOwner = group?.createdBy === user.uid;
 
-  const total = useMemo(() => expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0), [expenses]);
+  // Calculations: Total Expense, Total Deposit, Per Person Share, Member Paid
+  const totalExpense = useMemo(() => expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0), [expenses]);
 
-  const perMember = useMemo(() => {
+  const paidByMember = useMemo(() => {
     const map = {};
     expenses.forEach((e) => {
       map[e.paidBy] = (map[e.paidBy] || 0) + (Number(e.amount) || 0);
     });
     return map;
   }, [expenses]);
+
+  const deposits = group?.deposits || {};
+  const members = useMemo(() => Object.entries(activeMembersOf(group)), [group]);
+  const memberCount = members.length || 1;
+  const perPersonShare = totalExpense / memberCount;
+
+  const totalDeposit = useMemo(
+    () => members.reduce((sum, [uid]) => sum + (Number(deposits[uid]) || 0), 0),
+    [members, deposits]
+  );
+
+  // Save Initial Deposit to Firestore
+  const saveDeposit = async () => {
+    if (!depositModal.uid) return;
+    const val = Math.max(0, parseFloat(depositModal.amount) || 0);
+    try {
+      setBusy(true);
+      await updateDoc(doc(db, 'groups', groupId), {
+        [`deposits.${depositModal.uid}`]: val,
+      });
+      setDepositModal({ visible: false, uid: null, name: '', amount: '' });
+    } catch (e) {
+      showAlert('Error', 'Failed to update initial deposit.', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const sendInvite = async () => {
     const em = norm(email);
@@ -491,7 +293,7 @@ export default function GroupDetailScreen({ route, navigation }) {
       cancelText: 'Cancel',
       onConfirm: () => {
         hideAlert();
-        deleteExpense(groupId, e.id).catch(() => {});
+        deleteExpense(groupId, e.id).catch(() => { });
       },
       onCancel: hideAlert,
     });
@@ -556,134 +358,354 @@ export default function GroupDetailScreen({ route, navigation }) {
     );
   }
 
-  const members = Object.entries(activeMembersOf(group));
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <FlatList
         data={expenses}
         keyExtractor={(e) => e.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 115 }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            {/* Total */}
-            <View style={{ backgroundColor: primary, borderRadius: 24, padding: 18, marginBottom: 14, overflow: 'hidden' }}>
-              <View style={{ position: 'absolute', top: -40, right: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.14)' }} />
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12 }}>Total group expense</Text>
-              <Text style={{ color: '#fff', fontSize: 32, fontWeight: '900', marginTop: 2 }}>{formatMoney(total, symbol)}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4 }}>
-                {expenses.length} entries - {members.length} members
-              </Text>
-            </View>
+            {/* ===== Modern Hero Summary Card ===== */}
+            <FadeSlide index={0}>
+              <View
+                style={{
+                  backgroundColor: primary,
+                  borderRadius: 28,
+                  padding: 20,
+                  marginBottom: 20,
+                  overflow: 'hidden',
+                  shadowColor: primary,
+                  shadowOpacity: 0.25,
+                  shadowRadius: 14,
+                  shadowOffset: { width: 0, height: 6 },
+                  elevation: 6,
+                }}
+              >
+                <View style={{ position: 'absolute', top: -50, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                <View style={{ position: 'absolute', bottom: -60, left: -30, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(0,0,0,0.12)' }} />
 
-            {/* Members */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ color: colors.muted, fontWeight: '700' }}>Members</Text>
-              <TouchableOpacity onPress={() => setInviteOpen(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Icon name="account-plus-outline" size={18} color={primary} />
-                <Text style={{ color: primary, fontWeight: '700', fontSize: 13 }}>Invite</Text>
-              </TouchableOpacity>
-            </View>
-            <View
-              style={{
-                backgroundColor: colors.card,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: 12,
-                marginBottom: 16,
-              }}
-            >
-              {members.map(([uid, m], i) => (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' }}>Total Group Expense</Text>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>
+                      {expenses.length} {expenses.length === 1 ? 'entry' : 'entries'}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={{ color: '#fff', fontSize: 34, fontWeight: '900', marginTop: 4, letterSpacing: -0.5 }}>
+                  {formatMoney(totalExpense, symbol)}
+                </Text>
+
+                {/* Split & Deposit Mini Stats */}
                 <View
-                  key={uid}
+                  style={{
+                    flexDirection: 'row',
+                    backgroundColor: 'rgba(0,0,0,0.16)',
+                    borderRadius: 16,
+                    padding: 12,
+                    marginTop: 16,
+                    gap: 12,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '600' }}>Per Person ({members.length})</Text>
+                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 2 }}>{formatMoney(perPersonShare, symbol)}</Text>
+                  </View>
+                  <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '600' }}>Total Deposited</Text>
+                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 2 }}>{formatMoney(totalDeposit, symbol)}</Text>
+                  </View>
+                </View>
+              </View>
+            </FadeSlide>
+
+            {/* ===== Members & Split Breakdown ===== */}
+            <FadeSlide index={1}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: colors.muted, fontWeight: '800', fontSize: 13, letterSpacing: 0.4 }}>
+                  MEMBERS & SETTLEMENT
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setInviteOpen(true)}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: 10,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: colors.border,
+                    gap: 4,
+                    backgroundColor: primary + '18',
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: 12,
                   }}
                 >
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: primary + '22', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: primary, fontWeight: '800' }}>{(m.name || '?').charAt(0).toUpperCase()}</Text>
-                  </View>
-                  <Text style={{ color: colors.text, marginLeft: 10, flex: 1 }} numberOfLines={1}>
-                    {m.name}
-                    {uid === user.uid ? ' (You)' : ''}
-                    {uid === group.createdBy ? '  *' : ''}
-                  </Text>
-                  <Text style={{ color: colors.muted, fontWeight: '700' }}>{formatMoney(perMember[uid] || 0, symbol)}</Text>
-                </View>
-              ))}
-              {(group.invitedEmails || []).map((em) => (
-                <View
-                  key={em}
-                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}
-                >
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon name="email-outline" size={16} color={colors.dim} />
-                  </View>
-                  <Text style={{ color: colors.dim, marginLeft: 10, flex: 1 }} numberOfLines={1}>
-                    {em} (pending)
-                  </Text>
-                  {isOwner && (
-                    <TouchableOpacity onPress={() => cancelInvite(groupId, em).catch(() => { })}>
-                      <Icon name="close-circle-outline" size={18} color={colors.dim} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
+                  <Icon name="account-plus-outline" size={16} color={primary} />
+                  <Text style={{ color: primary, fontWeight: '700', fontSize: 12 }}>Invite</Text>
+                </TouchableOpacity>
+              </View>
 
-            <Text style={{ color: colors.muted, fontWeight: '700', marginBottom: 8 }}>Expenses</Text>
+              <View
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: 22,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingHorizontal: 14,
+                  marginBottom: 20,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 3 },
+                  elevation: 2,
+                }}
+              >
+                {members.map(([uid, m], i) => {
+                  const liveProfile = profiles[uid];
+                  const mName = liveProfile?.name || m.name || 'Member';
+                  const mAvatar = liveProfile?.avatar || memberPhoto(m);
+
+                  const deposited = Number(deposits[uid]) || 0;
+                  const paid = paidByMember[uid] || 0;
+                  const totalContributed = deposited + paid;
+                  // Positive = সে পাবে (Gets back), Negative = সে দিবে (Owes)
+                  const netBalance = totalContributed - perPersonShare;
+                  const isSettled = Math.abs(netBalance) < 0.5;
+                  const getsBack = netBalance >= 0.5;
+
+                  return (
+                    <View
+                      key={uid}
+                      style={{
+                        paddingVertical: 14,
+                        borderTopWidth: i === 0 ? 0 : 1,
+                        borderTopColor: colors.border,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <UserAvatar uri={mAvatar} name={mName} size={42} color={primary} bg={primary + '1F'} />
+
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15 }} numberOfLines={1}>
+                              {mName}
+                            </Text>
+                            {uid === user.uid && (
+                              <View style={{ backgroundColor: primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                                <Text style={{ color: primary, fontSize: 10, fontWeight: '800' }}>YOU</Text>
+                              </View>
+                            )}
+                            {uid === group.createdBy && (
+                              <Icon name="crown" size={14} color="#F59E0B" />
+                            )}
+                          </View>
+
+                          {/* Deposit & Paid Sub-row */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                            <TouchableOpacity
+                              onPress={() =>
+                                setDepositModal({
+                                  visible: true,
+                                  uid,
+                                  name: mName,
+                                  amount: deposited ? String(deposited) : '',
+                                })
+                              }
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 4,
+                                backgroundColor: colors.bg,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                paddingHorizontal: 8,
+                                paddingVertical: 3,
+                                borderRadius: 8,
+                              }}
+                            >
+                              <Icon name="piggy-bank-outline" size={12} color={primary} />
+                              <Text style={{ color: colors.text, fontSize: 11, fontWeight: '700' }}>
+                                Joma: {formatMoney(deposited, symbol)}
+                              </Text>
+                              <Icon name="pencil" size={10} color={colors.dim} />
+                            </TouchableOpacity>
+
+                            <Text style={{ color: colors.dim, fontSize: 11, fontWeight: '600' }}>
+                              Paid: {formatMoney(paid, symbol)}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Settlement Status Badge */}
+                        <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
+                          {isSettled ? (
+                            <View style={{ backgroundColor: colors.border + '80', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
+                              <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '800' }}>Settled</Text>
+                            </View>
+                          ) : getsBack ? (
+                            <View style={{ backgroundColor: '#10B9811F', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, alignItems: 'flex-end' }}>
+                              <Text style={{ color: '#059669', fontSize: 10, fontWeight: '700' }}>Pabe (Gets)</Text>
+                              <Text style={{ color: '#059669', fontSize: 13, fontWeight: '900' }}>+{formatMoney(netBalance, symbol)}</Text>
+                            </View>
+                          ) : (
+                            <View style={{ backgroundColor: '#EF44441F', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, alignItems: 'flex-end' }}>
+                              <Text style={{ color: '#DC2626', fontSize: 10, fontWeight: '700' }}>Dibe (Owes)</Text>
+                              <Text style={{ color: '#DC2626', fontSize: 13, fontWeight: '900' }}>-{formatMoney(Math.abs(netBalance), symbol)}</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* Pending Invites */}
+                {(group.invitedEmails || []).map((em) => (
+                  <View
+                    key={em}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }}
+                  >
+                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name="email-outline" size={18} color={colors.dim} />
+                    </View>
+                    <Text style={{ color: colors.dim, marginLeft: 12, flex: 1, fontSize: 13 }} numberOfLines={1}>
+                      {em} (pending)
+                    </Text>
+                    {isOwner && (
+                      <TouchableOpacity onPress={() => cancelInvite(groupId, em).catch(() => { })}>
+                        <Icon name="close-circle-outline" size={20} color={colors.dim} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+              </View>
+
+              <Text style={{ color: colors.muted, fontWeight: '800', fontSize: 13, letterSpacing: 0.4, marginBottom: 10 }}>
+                EXPENSES
+              </Text>
+            </FadeSlide>
           </View>
         }
         ListEmptyComponent={<EmptyState icon="receipt-text-outline" title="No expenses yet" subtitle="Tap the + button to add your first expense" />}
         ListFooterComponent={
-          <TouchableOpacity onPress={leaveOrDelete} style={{ alignItems: 'center', marginTop: 20 }}>
-            <Text style={{ color: colors.expense || '#DC2626', fontWeight: '700' }}>{isOwner ? 'Delete group' : 'Leave group'}</Text>
+          <TouchableOpacity onPress={leaveOrDelete} style={{ alignItems: 'center', marginTop: 24, paddingVertical: 10 }}>
+            <Text style={{ color: colors.expense || '#DC2626', fontWeight: '800', fontSize: 14 }}>
+              {isOwner ? 'Delete group' : 'Leave group'}
+            </Text>
           </TouchableOpacity>
         }
-        renderItem={({ item: e }) => {
-          const who = group.members?.[e.paidBy]?.name || e.paidByName || 'Someone';
+        renderItem={({ item: e, index }) => {
+          const payerProfile = profiles[e.paidBy];
+          const who = payerProfile?.name || group.members?.[e.paidBy]?.name || e.paidByName || 'Someone';
+          const payerPhoto = payerProfile?.avatar || memberPhoto(group.members?.[e.paidBy]);
           const d = e.date ? new Date(e.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
+
           return (
-            <TouchableOpacity
-              onPress={() => openEdit(e)}
-              onLongPress={() => confirmDeleteExpense(e)}
-              activeOpacity={0.8}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.card,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: 12,
-                marginBottom: 10,
-              }}
-            >
-              <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: (colors.expense || '#DC2626') + '1F', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="receipt" size={20} color={colors.expense || '#DC2626'} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: colors.text, fontWeight: '700' }} numberOfLines={1}>
-                  {e.title}
-                </Text>
-                <Text style={{ color: colors.dim, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
-                  {who} paid - {d}
-                  {e.note ? ` - ${e.note}` : ''}
-                </Text>
-              </View>
-              <Text style={{ color: colors.text, fontWeight: '800' }}>{formatMoney(e.amount, symbol)}</Text>
-            </TouchableOpacity>
+            <FadeSlide index={index + 2}>
+              <Press
+                onPress={() => openEdit(e)}
+                onLongPress={() => confirmDeleteExpense(e)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: colors.card,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  padding: 14,
+                  marginBottom: 10,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.04,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 2,
+                }}
+              >
+                {/* Payer Profile Picture */}
+                <UserAvatar uri={payerPhoto} name={who} size={44} color={primary} bg={primary + '1A'} />
+
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15 }} numberOfLines={1}>
+                    {e.title}
+                  </Text>
+                  <Text style={{ color: colors.dim, fontSize: 12, marginTop: 3 }} numberOfLines={1}>
+                    {who} paid · {d}
+                    {e.note ? ` · ${e.note}` : ''}
+                  </Text>
+                </View>
+
+                <View style={{ alignItems: 'flex-end', gap: 6, marginLeft: 8 }}>
+                  <Text style={{ color: colors.text, fontWeight: '900', fontSize: 15 }}>{formatMoney(e.amount, symbol)}</Text>
+
+                  {/* Transaction Share Card Trigger Button */}
+                  <TouchableOpacity
+                    onPress={() =>
+                      setShareItem({
+                        ...e,
+                        type: 'expense',
+                        paidByName: who,
+                        paidByAvatar: payerPhoto,
+                        groupName: group.name,
+                      })
+                    }
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 4,
+                      backgroundColor: primary + '15',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Icon name="share-variant-outline" size={13} color={primary} />
+                    <Text style={{ color: primary, fontSize: 11, fontWeight: '700' }}>Card</Text>
+                  </TouchableOpacity>
+                </View>
+              </Press>
+            </FadeSlide>
           );
         }}
       />
+
       <Fab onPress={() => navigation.navigate('AddGroupExpense', { groupId, groupName: group.name, members: activeMembersOf(group) })} />
 
+      {/* ===== Initial Deposit Edit Modal ===== */}
+      <SmallModal
+        visible={depositModal.visible}
+        onClose={() => setDepositModal({ visible: false, uid: null, name: '', amount: '' })}
+        title={`Initial Joma (${depositModal.name})`}
+        colors={colors}
+      >
+        <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 8 }}>
+          Enter the initial amount deposited by {depositModal.name}:
+        </Text>
+        <TextInput
+          value={depositModal.amount}
+          onChangeText={(v) => setDepositModal((prev) => ({ ...prev, amount: v }))}
+          placeholder="0"
+          placeholderTextColor={colors.dim}
+          keyboardType="numeric"
+          style={{
+            backgroundColor: colors.bg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            color: colors.text,
+            fontSize: 18,
+            fontWeight: '800',
+            marginBottom: 14,
+          }}
+          autoFocus
+        />
+        <PrimaryBtn label="Save Deposit" onPress={saveDeposit} busy={busy} color={primary} />
+      </SmallModal>
+
+      {/* ===== Invite Friends Modal ===== */}
       <SmallModal visible={inviteOpen} onClose={() => setInviteOpen(false)} title="Invite friends" colors={colors}>
         <Text style={{ color: colors.muted, fontSize: 12, marginBottom: 8 }}>Enter your friend's registered email:</Text>
         <TextInput
@@ -724,6 +746,17 @@ export default function GroupDetailScreen({ route, navigation }) {
           <Text style={{ color: primary, fontWeight: '800' }}>Share link ({group.inviteCode})</Text>
         </TouchableOpacity>
       </SmallModal>
+
+      {/* ===== আপনার ShareTransactionModal এখানে কানেক্ট হবে ===== */}
+      {/* 
+      <ShareTransactionModal
+        visible={!!shareItem}
+        onClose={() => setShareItem(null)}
+        item={shareItem}
+        symbol={symbol}
+        colors={colors}
+      /> 
+      */}
 
       {/* Custom Alert Component */}
       <CustomAlert
