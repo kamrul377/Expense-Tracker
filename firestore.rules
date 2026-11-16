@@ -102,6 +102,13 @@ service cloud.firestore {
       allow get: if signedIn();
       allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
       allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+      
     }
+
   }
+
 }
+
+
+
+
