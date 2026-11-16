@@ -1,3 +1,6 @@
+
+
+
 // // screens/AddGroupExpenseScreen.js
 // import React, { useState } from 'react';
 // import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -6,12 +9,14 @@
 // import { useAuth } from '../context/AuthContext';
 // import { useData } from '../context/DataContext';
 // import { radius } from '../constants/theme';
-// import { saveExpense } from '../services/groupService';
+// import { displayName, saveExpense } from '../services/groupService';
+// import { sendPush } from '../services/pushService';
+// import { formatMoney } from '../utils/format';
 // import { PrimaryBtn } from './GroupsScreen';
 
 // export default function AddGroupExpenseScreen({ route, navigation }) {
-//     const { groupId, members = {}, expense } = route.params;
-//     const { user, colors } = useAuth();
+//     const { groupId, groupName = 'Group', members = {}, expense } = route.params;
+//     const { user, profile, colors } = useAuth();
 //     const { symbol } = useData();
 //     const primary = colors.primary || '#059669';
 
@@ -42,6 +47,20 @@
 //                 },
 //                 expense?.id
 //             );
+//             // Notun entry hole group er onno member der notification
+//             if (!expense) {
+//                 const others = Object.entries(members)
+//                     .filter(([uid]) => uid !== user.uid)
+//                     .map(([, m]) => m.email)
+//                     .filter(Boolean);
+//                 if (others.length) {
+//                     sendPush(others, {
+//                         title: groupName,
+//                         body: `${displayName(user, profile)} added "${title.trim()}" - ${formatMoney(amt, symbol)}`,
+//                         data: { type: 'expense', groupId },
+//                     });
+//                 }
+//             }
 //             navigation.goBack();
 //         } catch (e) {
 //             Alert.alert('Error', 'Save kora jayni. Abar try korun.');
@@ -122,13 +141,15 @@
 //                 )}
 
 //                 <Text style={label}>Note (optional)</Text>
-//                 <TextInput value={note} onChangeText={setNote} placeholder="Kono note thakle" placeholderTextColor={colors.dim} style={field} />
+//                 <TextInput value={note} onChangeText={setNote} placeholder="Add Note..." placeholderTextColor={colors.dim} style={field} />
 
 //                 <PrimaryBtn label={expense ? 'Update' : 'Add expense'} onPress={submit} busy={busy} color={primary} />
 //             </ScrollView>
 //         </KeyboardAvoidingView>
 //     );
 // }
+
+
 
 
 
@@ -274,10 +295,12 @@ export default function AddGroupExpenseScreen({ route, navigation }) {
                 )}
 
                 <Text style={label}>Note (optional)</Text>
-                <TextInput value={note} onChangeText={setNote} placeholder="Kono note thakle" placeholderTextColor={colors.dim} style={field} />
+                <TextInput value={note} onChangeText={setNote} placeholder="Add Note..." placeholderTextColor={colors.dim} style={field} />
 
                 <PrimaryBtn label={expense ? 'Update' : 'Add expense'} onPress={submit} busy={busy} color={primary} />
             </ScrollView>
         </KeyboardAvoidingView>
     );
 }
+
+

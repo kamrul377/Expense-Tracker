@@ -1,10 +1,13 @@
+
+
 // screens/GroupsScreen.js
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { EmptyState, Fab } from '../components/ui';
 import { radius } from '../constants/theme';
+import CustomAlert from '../components/CustomAlert'; // Import your custom alert component
 import {
   acceptInvite,
   createGroup,
@@ -26,6 +29,31 @@ export default function GroupsScreen({ navigation, route }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Custom Alert State
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'error',
+    showCancel: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const showAlert = (title, message, type = 'error', options = {}) => {
+    setAlertConfig({
+      visible: true,
+      title,
+      message,
+      type,
+      ...options,
+    });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+  };
 
   useEffect(() => {
     if (noAccount) return undefined;
@@ -57,7 +85,7 @@ export default function GroupsScreen({ navigation, route }) {
       setCreateOpen(false);
       navigation.navigate('GroupDetail', { groupId: id });
     } catch (e) {
-      Alert.alert('Error', 'Group create kora jayni.');
+      showAlert('Error', 'Group create kora jayni.', 'error');
     } finally {
       setBusy(false);
     }
@@ -71,7 +99,7 @@ export default function GroupsScreen({ navigation, route }) {
       setJoinOpen(false);
       navigation.navigate('GroupDetail', { groupId: id });
     } catch (e) {
-      Alert.alert('Join failed', 'Code ta thik nei ba group ta paoya jayni.');
+      showAlert('Join failed', 'The code is incorrect, or the group could not be found.', 'error');
     } finally {
       setBusy(false);
     }
@@ -81,7 +109,7 @@ export default function GroupsScreen({ navigation, route }) {
     try {
       await acceptInvite(g.id, user, profile);
     } catch (e) {
-      Alert.alert('Error', 'Invite accept kora jayni.');
+      showAlert('Error', 'Invite accept kora jayni.', 'error');
     }
   };
 
@@ -89,7 +117,7 @@ export default function GroupsScreen({ navigation, route }) {
     try {
       await declineInvite(g.id, user.email);
     } catch (e) {
-      Alert.alert('Error', 'Decline kora jayni.');
+      showAlert('Error', 'Decline kora jayni.', 'error');
     }
   };
 
@@ -248,6 +276,18 @@ export default function GroupsScreen({ navigation, route }) {
         />
         <PrimaryBtn label="Join" onPress={() => doJoin()} busy={busy} color={primary} />
       </SmallModal>
+
+      {/* Custom Alert Component */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        showCancel={alertConfig.showCancel}
+        onClose={hideAlert}
+        onConfirm={alertConfig.onConfirm}
+        onCancel={alertConfig.onCancel}
+      />
     </View>
   );
 }

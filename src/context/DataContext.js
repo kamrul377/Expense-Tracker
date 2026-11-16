@@ -1,6 +1,7 @@
 
 
-// import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+
+// import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 // import { Alert } from 'react-native';
 // import {
 //   addDoc,
@@ -35,6 +36,7 @@
 //   const [customCategories, setCustomCategories] = useState([]);
 //   const [budgets, setBudgets] = useState({});
 //   const [loading, setLoading] = useState(true);
+//   const [refreshKey, setRefreshKey] = useState(0);
 
 //   const col = (name) => collection(db, 'users', uid, name);
 
@@ -84,7 +86,17 @@
 
 //     return () => unsubs.forEach((u) => u());
 //     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [uid]);
+//   }, [uid, refreshKey]);
+
+//   // Pull-to-refresh: listener gulo abar chalu kore server theke notun data ane
+//   const refresh = useCallback(
+//     () =>
+//       new Promise((resolve) => {
+//         setRefreshKey((k) => k + 1);
+//         setTimeout(resolve, 900);
+//       }),
+//     []
+//   );
 
 //   const symbol = CURRENCIES.find((c) => c.code === currency)?.symbol || '৳';
 
@@ -108,7 +120,7 @@
 //     date: Timestamp.fromDate(t.date instanceof Date ? t.date : new Date(t.date)),
 //   });
 
-//   // Optimistic update + Firestore write যাতে প্রথমবার সাইনআপের পরও সাথে সাথে দেখায়
+//   // Optimistic update + Firestore write যাতে প্রথমবার সাইনআপের পরও সাথে সাথে দেখায়
 //   const addTransaction = (t) => {
 //     const tempId = 'temp_' + Date.now();
 //     const optimisticItem = {
@@ -175,6 +187,7 @@
 //     categories,
 //     customCategories,
 //     budgets,
+//     refresh,
 //     getCategory,
 //     categoriesOfType,
 //     addTransaction,
@@ -190,8 +203,12 @@
 // }
 
 
+
+
+
+
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import {
   addDoc,
   collection,
@@ -211,14 +228,12 @@ import {
   DEFAULT_EXPENSE_CATEGORIES,
   DEFAULT_INCOME_CATEGORIES,
 } from '../constants/categories';
+import CustomAlert from '../components/CustomAlert'; // Import your custom alert component
 
 const DataContext = createContext(null);
 export const useData = () => useContext(DataContext);
 
 const FALLBACK = { icon: 'dots-horizontal', color: '#64748B' };
-
-const run = (promise) =>
-  promise.catch((e) => Alert.alert('Error', e?.message || 'Could not save data.'));
 
 export function DataProvider({ uid, currency = 'BDT', children }) {
   const [transactions, setTransactions] = useState([]);
@@ -226,6 +241,40 @@ export function DataProvider({ uid, currency = 'BDT', children }) {
   const [budgets, setBudgets] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Custom Alert State
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'error',
+    showCancel: false,
+    confirmText: 'Okay, Got it',
+    cancelText: 'Cancel',
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const showAlert = (title, message, type = 'error', options = {}) => {
+    setAlertConfig({
+      visible: true,
+      title,
+      message,
+      type,
+      showCancel: options.showCancel || false,
+      confirmText: options.confirmText || 'Okay, Got it',
+      cancelText: options.cancelText || 'Cancel',
+      onConfirm: options.onConfirm || null,
+      onCancel: options.onCancel || null,
+    });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+  };
+
+  const run = (promise) =>
+    promise.catch((e) => showAlert('Error', e?.message || 'Could not save data.', 'error'));
 
   const col = (name) => collection(db, 'users', uid, name);
 
@@ -277,7 +326,7 @@ export function DataProvider({ uid, currency = 'BDT', children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid, refreshKey]);
 
-  // Pull-to-refresh: listener gulo abar chalu kore server theke notun data ane
+  // Pull-to-refresh: restarts listeners and fetches fresh data from the server
   const refresh = useCallback(
     () =>
       new Promise((resolve) => {
@@ -309,7 +358,7 @@ export function DataProvider({ uid, currency = 'BDT', children }) {
     date: Timestamp.fromDate(t.date instanceof Date ? t.date : new Date(t.date)),
   });
 
-  // Optimistic update + Firestore write যাতে প্রথমবার সাইনআপের পরও সাথে সাথে দেখায়
+  // Optimistic update + Firestore write so data appears immediately even right after signup
   const addTransaction = (t) => {
     const tempId = 'temp_' + Date.now();
     const optimisticItem = {
@@ -388,5 +437,29 @@ export function DataProvider({ uid, currency = 'BDT', children }) {
     removeBudget,
   };
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+      {/* Global Custom Alert Component */}
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        showCancel={alertConfig.showCancel}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        onClose={hideAlert}
+        onConfirm={alertConfig.onConfirm || hideAlert}
+        onCancel={alertConfig.onCancel || hideAlert}
+      />
+    </DataContext.Provider>
+  );
 }
+
+
+
+
+
+
+
