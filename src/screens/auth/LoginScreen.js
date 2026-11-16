@@ -1113,7 +1113,7 @@ const createStyles = (colors) =>
       paddingVertical: 8,
     },
     footerText: {
-      color: colors.muted,cd
+      color: colors.muted,
       fontSize: 15,
     },
   });

@@ -978,6 +978,20 @@ export default function ProfileScreen({ navigation }) {
             )}
           </View>
 
+          {/* ---------- About / Developer ---------- */}
+          <Text style={styles.sectionTitle}>About</Text>
+          <View style={styles.group}>
+            <Row 
+              styles={styles} 
+              colors={colors} 
+              icon="code-braces" 
+              tint="#8B5CF6" 
+              label="Developer Info" 
+              subtitle="App version, creator & details" 
+              onPress={() => navigation.navigate('Developer')} 
+            />
+          </View>
+
 
 
 
