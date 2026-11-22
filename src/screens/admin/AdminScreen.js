@@ -13,6 +13,19 @@
 // const roleColor = (r) => ROLE_COLORS[r] || ROLE_COLORS.user;
 // const roleLabel = (r) => ROLE_LABELS[r] || ROLE_LABELS.user;
 
+// // Helper to format last logout timestamp nicely
+// const formatLastLogout = (timestamp) => {
+//   if (!timestamp) return 'Never / Unknown';
+//   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+//   return date.toLocaleString('en-US', {
+//     month: 'short',
+//     day: 'numeric',
+//     hour: 'numeric',
+//     minute: '2-digit',
+//     hour12: true,
+//   });
+// };
+
 // export default function AdminScreen() {
 //   const { user, colors } = useAuth();
 //   const [users, setUsers] = useState([]);
@@ -34,6 +47,7 @@
 //       total: users.length,
 //       admins: users.filter((u) => u.role === ROLES.ADMIN).length,
 //       disabled: users.filter((u) => u.disabled).length,
+//       online: users.filter((u) => u.isOnline).length,
 //     }),
 //     [users]
 //   );
@@ -74,7 +88,8 @@
 //         ListHeaderComponent={
 //           <View style={{ marginBottom: 12 }}>
 //             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
-//               <Stat label="Total users" value={stats.total} color={colors.primaryLight} />
+//               <Stat label="Total" value={stats.total} color={colors.primaryLight} />
+//               <Stat label="Online" value={stats.online} color="#10B981" />
 //               <Stat label="Admins" value={stats.admins} color={ROLE_COLORS.admin} />
 //               <Stat label="Disabled" value={stats.disabled} color={colors.dim} />
 //             </View>
@@ -116,31 +131,55 @@
 //                 opacity: item.disabled ? 0.55 : 1,
 //               }}
 //             >
-//               <View
-//                 style={{
-//                   width: 40,
-//                   height: 40,
-//                   borderRadius: 20,
-//                   backgroundColor: roleColor(item.role) + '30',
-//                   alignItems: 'center',
-//                   justifyContent: 'center',
-//                   overflow: 'hidden',
-//                 }}
-//               >
-//                 {item.avatar ? (
-//                   <Image source={{ uri: item.avatar }} style={{ width: '100%', height: '100%' }} />
-//                 ) : (
-//                   <Text style={{ color: roleColor(item.role), fontWeight: '800' }}>
-//                     {(item.name || '?')[0].toUpperCase()}
-//                   </Text>
-//                 )}
+//               <View style={{ position: 'relative' }}>
+//                 <View
+//                   style={{
+//                     width: 40,
+//                     height: 40,
+//                     borderRadius: 20,
+//                     backgroundColor: roleColor(item.role) + '30',
+//                     alignItems: 'center',
+//                     justifyContent: 'center',
+//                     overflow: 'hidden',
+//                   }}
+//                 >
+//                   {item.avatar ? (
+//                     <Image source={{ uri: item.avatar }} style={{ width: '100%', height: '100%' }} />
+//                   ) : (
+//                     <Text style={{ color: roleColor(item.role), fontWeight: '800' }}>
+//                       {(item.name || '?')[0].toUpperCase()}
+//                     </Text>
+//                   )}
+//                 </View>
+//                 {/* Active Status Indicator Dot */}
+//                 <View
+//                   style={{
+//                     position: 'absolute',
+//                     bottom: 0,
+//                     right: 0,
+//                     width: 11,
+//                     height: 11,
+//                     borderRadius: 6,
+//                     backgroundColor: item.isOnline ? '#10B981' : '#94A3B8',
+//                     borderWidth: 2,
+//                     borderColor: colors.card,
+//                   }}
+//                 />
 //               </View>
+
 //               <View style={{ flex: 1, marginLeft: 12 }}>
 //                 <Text style={{ color: colors.text, fontWeight: '600' }}>
 //                   {item.name} {item.uid === user.uid ? '(you)' : ''}
 //                 </Text>
-//                 <Text style={{ color: colors.muted, fontSize: 12 }}>{item.email}</Text>
+//                 <Text style={{ color: colors.muted, fontSize: 12 }}>
+//                   {item.isOnline ? (
+//                     <Text style={{ color: '#10B981', fontWeight: '600' }}>Active now</Text>
+//                   ) : (
+//                     `Last logout: ${formatLastLogout(item.lastLogout)}`
+//                   )}
+//                 </Text>
 //               </View>
+
 //               <View style={{ alignItems: 'flex-end' }}>
 //                 <Text style={{ color: roleColor(item.role), fontWeight: '700', fontSize: 12 }}>
 //                   {roleLabel(item.role)}
@@ -188,6 +227,9 @@
 //                 <View style={{ flex: 1 }}>
 //                   <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>{selectedUser.name}</Text>
 //                   <Text style={{ color: colors.muted, fontSize: 13 }}>{selectedUser.email}</Text>
+//                   <Text style={{ color: selectedUser.isOnline ? '#10B981' : colors.muted, fontSize: 12, marginTop: 2 }}>
+//                     {selectedUser.isOnline ? '● Active now' : `Last logout: ${formatLastLogout(selectedUser.lastLogout)}`}
+//                   </Text>
 //                 </View>
 //               </View>
 
@@ -250,6 +292,15 @@
 // }
 
 
+
+
+
+
+
+
+
+
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Image, Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
@@ -263,8 +314,23 @@ import { ROLES, ROLE_COLORS, ROLE_LABELS } from '../../constants/roles';
 const roleColor = (r) => ROLE_COLORS[r] || ROLE_COLORS.user;
 const roleLabel = (r) => ROLE_LABELS[r] || ROLE_LABELS.user;
 
-// Helper to format last logout timestamp nicely
-const formatLastLogout = (timestamp) => {
+const ONLINE_WINDOW_MS = 2 * 60 * 1000; // 2 minute er moddhe seen hole online
+
+const toMillis = (ts) => {
+  if (!ts) return null;
+  if (ts.toDate) return ts.toDate().getTime();
+  return new Date(ts).getTime();
+};
+
+// Online = isOnline true AND lastSeen last 2 minute er moddhe
+const isUserOnline = (u) => {
+  if (!u.isOnline) return false;
+  const t = toMillis(u.lastSeen);
+  if (!t) return false;
+  return Date.now() - t < ONLINE_WINDOW_MS;
+};
+
+const formatTime = (timestamp) => {
   if (!timestamp) return 'Never / Unknown';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
   return date.toLocaleString('en-US', {
@@ -276,11 +342,18 @@ const formatLastLogout = (timestamp) => {
   });
 };
 
+// Offline hole last logout, na thakle last seen dekhabe (app kill korle logout hoy na)
+const offlineText = (u) =>
+  u.lastLogout && (!u.lastSeen || toMillis(u.lastLogout) >= toMillis(u.lastSeen) - 5000)
+    ? `Last logout: ${formatTime(u.lastLogout)}`
+    : `Last seen: ${formatTime(u.lastSeen || u.lastLogout)}`;
+
 export default function AdminScreen() {
   const { user, colors } = useAuth();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
+  const [, setTick] = useState(0);
 
   useEffect(
     () =>
@@ -292,15 +365,18 @@ export default function AdminScreen() {
     []
   );
 
-  const stats = useMemo(
-    () => ({
-      total: users.length,
-      admins: users.filter((u) => u.role === ROLES.ADMIN).length,
-      disabled: users.filter((u) => u.disabled).length,
-      online: users.filter((u) => u.isOnline).length,
-    }),
-    [users]
-  );
+  // 30 second por por re-render, jate online status refresh hoy
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const stats = {
+    total: users.length,
+    admins: users.filter((u) => u.role === ROLES.ADMIN).length,
+    disabled: users.filter((u) => u.disabled).length,
+    online: users.filter(isUserOnline).length,
+  };
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -333,6 +409,7 @@ export default function AdminScreen() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <FlatList
         data={list}
+        extraData={stats.online}
         keyExtractor={(u) => u.uid}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         ListHeaderComponent={
@@ -370,75 +447,78 @@ export default function AdminScreen() {
           </View>
         }
         ListEmptyComponent={<EmptyState icon="account-search" title="No users found" />}
-        renderItem={({ item }) => (
-          <TouchableOpacity activeOpacity={0.8} onPress={() => setSelected(item.uid)}>
-            <Card
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: 12,
-                marginBottom: 10,
-                opacity: item.disabled ? 0.55 : 1,
-              }}
-            >
-              <View style={{ position: 'relative' }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: roleColor(item.role) + '30',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {item.avatar ? (
-                    <Image source={{ uri: item.avatar }} style={{ width: '100%', height: '100%' }} />
-                  ) : (
-                    <Text style={{ color: roleColor(item.role), fontWeight: '800' }}>
-                      {(item.name || '?')[0].toUpperCase()}
-                    </Text>
-                  )}
+        renderItem={({ item }) => {
+          const online = isUserOnline(item);
+          return (
+            <TouchableOpacity activeOpacity={0.8} onPress={() => setSelected(item.uid)}>
+              <Card
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  marginBottom: 10,
+                  opacity: item.disabled ? 0.55 : 1,
+                }}
+              >
+                <View style={{ position: 'relative' }}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: roleColor(item.role) + '30',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {item.avatar ? (
+                      <Image source={{ uri: item.avatar }} style={{ width: '100%', height: '100%' }} />
+                    ) : (
+                      <Text style={{ color: roleColor(item.role), fontWeight: '800' }}>
+                        {(item.name || '?')[0].toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+                  {/* Active Status Indicator Dot */}
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      width: 11,
+                      height: 11,
+                      borderRadius: 6,
+                      backgroundColor: online ? '#10B981' : '#94A3B8',
+                      borderWidth: 2,
+                      borderColor: colors.card,
+                    }}
+                  />
                 </View>
-                {/* Active Status Indicator Dot */}
-                <View
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: 11,
-                    height: 11,
-                    borderRadius: 6,
-                    backgroundColor: item.isOnline ? '#10B981' : '#94A3B8',
-                    borderWidth: 2,
-                    borderColor: colors.card,
-                  }}
-                />
-              </View>
 
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: colors.text, fontWeight: '600' }}>
-                  {item.name} {item.uid === user.uid ? '(you)' : ''}
-                </Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>
-                  {item.isOnline ? (
-                    <Text style={{ color: '#10B981', fontWeight: '600' }}>Active now</Text>
-                  ) : (
-                    `Last logout: ${formatLastLogout(item.lastLogout)}`
-                  )}
-                </Text>
-              </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>
+                    {item.name} {item.uid === user.uid ? '(you)' : ''}
+                  </Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>
+                    {online ? (
+                      <Text style={{ color: '#10B981', fontWeight: '600' }}>Active now</Text>
+                    ) : (
+                      offlineText(item)
+                    )}
+                  </Text>
+                </View>
 
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: roleColor(item.role), fontWeight: '700', fontSize: 12 }}>
-                  {roleLabel(item.role)}
-                </Text>
-                {item.disabled ? <Text style={{ color: colors.expense, fontSize: 11 }}>Disabled</Text> : null}
-              </View>
-            </Card>
-          </TouchableOpacity>
-        )}
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ color: roleColor(item.role), fontWeight: '700', fontSize: 12 }}>
+                    {roleLabel(item.role)}
+                  </Text>
+                  {item.disabled ? <Text style={{ color: colors.expense, fontSize: 11 }}>Disabled</Text> : null}
+                </View>
+              </Card>
+            </TouchableOpacity>
+          );
+        }}
       />
 
       <Modal visible={!!selectedUser} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
@@ -477,8 +557,14 @@ export default function AdminScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>{selectedUser.name}</Text>
                   <Text style={{ color: colors.muted, fontSize: 13 }}>{selectedUser.email}</Text>
-                  <Text style={{ color: selectedUser.isOnline ? '#10B981' : colors.muted, fontSize: 12, marginTop: 2 }}>
-                    {selectedUser.isOnline ? '● Active now' : `Last logout: ${formatLastLogout(selectedUser.lastLogout)}`}
+                  <Text
+                    style={{
+                      color: isUserOnline(selectedUser) ? '#10B981' : colors.muted,
+                      fontSize: 12,
+                      marginTop: 2,
+                    }}
+                  >
+                    {isUserOnline(selectedUser) ? '● Active now' : offlineText(selectedUser)}
                   </Text>
                 </View>
               </View>
